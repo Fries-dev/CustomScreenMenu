@@ -1,14 +1,9 @@
 package com.cmenu.ui.npc;
-
 import de.oliver.fancynpcs.api.FancyNpcsPlugin;
 import de.oliver.fancynpcs.api.Npc;
 import de.oliver.fancynpcs.api.NpcData;
 import de.oliver.fancynpcs.api.NpcManager;
 import de.oliver.fancynpcs.api.utils.NpcEquipmentSlot;
-import net.skinsrestorer.api.SkinsRestorer;
-import net.skinsrestorer.api.SkinsRestorerProvider;
-import net.skinsrestorer.api.property.SkinProperty;
-import net.skinsrestorer.api.storage.PlayerStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -26,15 +21,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * This is a standalone module that does not modify the CMP core code.
  * It integrates with the menu system via hooks.
  */
+
 public class NPCMirrorManager {
 
     private static NPCMirrorManager instance;
     private final JavaPlugin plugin;
 
     private FancyNpcsPlugin fancyNpcsPlugin;
-    private SkinsRestorer skinsRestorer;
     private boolean fancyNpcsEnabled = false;
-    private boolean skinsRestorerEnabled = false;
 
     private final Map<UUID, Npc> playerNPCs = new ConcurrentHashMap<>();
     private final Set<UUID> disabledPlayers = new HashSet<>();
@@ -69,18 +63,6 @@ public class NPCMirrorManager {
             }
         } else {
             plugin.getLogger().info("[NPCMirror] FancyNpcs plugin not found, NPC mirror feature disabled");
-        }
-
-        if (Bukkit.getPluginManager().isPluginEnabled("SkinsRestorer")) {
-            try {
-                skinsRestorer = SkinsRestorerProvider.get();
-                skinsRestorerEnabled = true;
-                plugin.getLogger().info("[NPCMirror] SkinsRestorer plugin found, skin sync feature enabled");
-            } catch (Exception e) {
-                plugin.getLogger().warning("[NPCMirror] Failed to load SkinsRestorer: " + e.getMessage());
-            }
-        } else {
-            plugin.getLogger().info("[NPCMirror] SkinsRestorer plugin not found, default skin will be used");
         }
     }
 
@@ -196,23 +178,6 @@ public class NPCMirrorManager {
     }
 
     private void applyPlayerSkin(Player player, NpcData npcData) {
-        if (!skinsRestorerEnabled) return;
-
-        try {
-            PlayerStorage playerStorage = skinsRestorer.getPlayerStorage();
-            Optional<SkinProperty> skin = playerStorage.getSkinForPlayer(
-                    player.getUniqueId(),
-                    player.getName()
-            );
-
-            if (skin.isPresent()) {
-                npcData.setSkin(player.getName());
-            }
-        } catch (IllegalStateException e) {
-            plugin.getLogger().info("[NPCMirror] SkinsRestorer API unavailable, skipping skin setup");
-        } catch (Exception e) {
-            plugin.getLogger().warning("[NPCMirror] Failed to retrieve player skin: " + e.getMessage());
-        }
     }
 
     private void copyPlayerEquipment(Player player, NpcData npcData) {
