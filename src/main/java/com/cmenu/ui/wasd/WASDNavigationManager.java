@@ -16,30 +16,30 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * WASD导航管理器
- * 负责处理菜单中的WASD键盘导航和空格确认功能
- * 
- * 这是一个独立的模块，不修改CMP核心代码
- * 与原有光标控制系统并存，互不干扰
+ * WASD navigation manager.
+ * Handles WASD keyboard navigation and Space-to-confirm functionality inside menus.
+ *
+ * This is a standalone module that does not modify the CMP core code.
+ * It coexists with the existing cursor control system without interference.
  */
 public class WASDNavigationManager {
 
     private static WASDNavigationManager instance;
     private final JavaPlugin plugin;
-    
+
     private WASDConfig config;
     private PacketListenerAbstract packetListener;
     private boolean registered = false;
-    
+
     private WASDExpansion papiExpansion;
-    
+
     private final Map<UUID, WASDSession> playerSessions = new ConcurrentHashMap<>();
     private final Map<UUID, Location[]> playerTextLocations = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> playerSelectedIndex = new ConcurrentHashMap<>();
     private final Map<UUID, Boolean> playerSelectionCooldown = new ConcurrentHashMap<>();
     private final Map<UUID, List<String>> playerTextCommands = new ConcurrentHashMap<>();
     private final Map<UUID, String> playerCurrentMenus = new ConcurrentHashMap<>();
-    
+
     private static final long SELECTION_COOLDOWN_MS = 500;
 
     private WASDNavigationManager(JavaPlugin plugin) {
@@ -54,68 +54,48 @@ public class WASDNavigationManager {
         return instance;
     }
 
-    public static WASDNavigationManager getInstance() {
-        return instance;
-    }
+    public static WASDNavigationManager getInstance() { return instance; }
 
-    /**
-     * 初始化WASD导航模块
-     */
+    /** Initializes the WASD navigation module. */
     public void initialize() {
-        if (registered) {
-            return;
-        }
-        
+        if (registered) return;
+
         registerPacketListener();
         registerPAPIExpansion();
         registered = true;
-        plugin.getLogger().info("[WASDNavigation] WASD导航模块已初始化");
+        plugin.getLogger().info("[WASDNavigation] WASD navigation module initialized");
     }
 
-    /**
-     * 注册PAPI扩展
-     */
+    /** Registers the PlaceholderAPI expansion. */
     private void registerPAPIExpansion() {
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             try {
                 papiExpansion = new WASDExpansion(this);
                 if (papiExpansion.register()) {
-                    plugin.getLogger().info("[WASDNavigation] PAPI变量扩展已注册");
+                    plugin.getLogger().info("[WASDNavigation] PAPI variable expansion registered");
                 }
             } catch (Exception e) {
-                plugin.getLogger().warning("[WASDNavigation] 无法注册PAPI扩展: " + e.getMessage());
+                plugin.getLogger().warning("[WASDNavigation] Failed to register PAPI expansion: " + e.getMessage());
             }
         }
     }
 
-    /**
-     * 检查模块是否已注册
-     */
-    public boolean isRegistered() {
-        return registered;
-    }
+    /** Checks whether the module has been registered. */
+    public boolean isRegistered() { return registered; }
 
-    /**
-     * 注册数据包监听器
-     */
+    /** Registers the packet listener. */
     private void registerPacketListener() {
         packetListener = new PacketListenerAbstract() {
             @Override
             public void onPacketReceive(PacketReceiveEvent event) {
-                if (event.getUser() == null || event.getUser().getName() == null) {
-                    return;
-                }
+                if (event.getUser() == null || event.getUser().getName() == null) return;
 
                 Player player = Bukkit.getPlayer(event.getUser().getName());
-                if (player == null || !player.isOnline()) {
-                    return;
-                }
+                if (player == null || !player.isOnline()) return;
 
                 UUID playerId = player.getUniqueId();
 
-                if (!isWASDEnabledForPlayer(playerId)) {
-                    return;
-                }
+                if (!isWASDEnabledForPlayer(playerId)) return;
 
                 if (event.getPacketType() == PacketType.Play.Client.PLAYER_INPUT) {
                     handlePlayerInput(player, event);
@@ -126,25 +106,21 @@ public class WASDNavigationManager {
         PacketEvents.getAPI().getEventManager().registerListener(packetListener);
     }
 
-    /**
-     * 处理玩家输入
-     */
+    /** Handles player input. */
     private void handlePlayerInput(Player player, PacketReceiveEvent event) {
         UUID playerId = player.getUniqueId();
-        
-        if (!playerSessions.containsKey(playerId)) {
-            return;
-        }
+
+        if (!playerSessions.containsKey(playerId)) return;
 
         WrapperPlayClientPlayerInput inputPacket = new WrapperPlayClientPlayerInput(event);
 
         float sideways = 0.0f;
         float forward = 0.0f;
 
-        if (inputPacket.isForward()) forward += 1.0f;
-        if (inputPacket.isBackward()) forward -= 1.0f;
-        if (inputPacket.isLeft()) sideways += 1.0f;
-        if (inputPacket.isRight()) sideways -= 1.0f;
+        if (inputPacket.isForward())  forward  += 1.0f;
+        if (inputPacket.isBackward()) forward  -= 1.0f;
+        if (inputPacket.isLeft())     sideways += 1.0f;
+        if (inputPacket.isRight())    sideways -= 1.0f;
 
         if (inputPacket.isJump()) {
             executeSelectedCommand(player);
@@ -155,28 +131,19 @@ public class WASDNavigationManager {
         }
     }
 
-    /**
-     * 处理导航输入
-     */
+    /** Handles navigation input. */
     private void handleNavigationInput(Player player, float forward, float sideways) {
         UUID playerId = player.getUniqueId();
-        
-        if (isOnCooldown(playerId)) {
-            return;
-        }
+
+        if (isOnCooldown(playerId)) return;
 
         int currentIndex = playerSelectedIndex.getOrDefault(playerId, 0);
         int newIndex = -1;
 
-        if (forward > 0) {
-            newIndex = findPrevText(playerId, currentIndex);
-        } else if (forward < 0) {
-            newIndex = findNextText(playerId, currentIndex);
-        } else if (sideways > 0) {
-            newIndex = findLeftText(player, playerId, currentIndex);
-        } else if (sideways < 0) {
-            newIndex = findRightText(player, playerId, currentIndex);
-        }
+        if (forward > 0)       newIndex = findPrevText(playerId, currentIndex);
+        else if (forward < 0)  newIndex = findNextText(playerId, currentIndex);
+        else if (sideways > 0) newIndex = findLeftText(player, playerId, currentIndex);
+        else if (sideways < 0) newIndex = findRightText(player, playerId, currentIndex);
 
         if (newIndex != -1 && newIndex != currentIndex) {
             setSelectedIndex(player, newIndex);
@@ -184,14 +151,10 @@ public class WASDNavigationManager {
         }
     }
 
-    /**
-     * 查找上方文本
-     */
+    /** Finds the text above the current selection. */
     private int findPrevText(UUID playerId, int currentIndex) {
         Location[] locations = playerTextLocations.get(playerId);
-        if (locations == null || currentIndex < 0 || currentIndex >= locations.length) {
-            return -1;
-        }
+        if (locations == null || currentIndex < 0 || currentIndex >= locations.length) return -1;
 
         Location currentLoc = locations[currentIndex];
         if (currentLoc == null) return -1;
@@ -207,17 +170,10 @@ public class WASDNavigationManager {
             if (i == currentIndex || locations[i] == null) continue;
 
             Location targetLoc = locations[i];
-            double targetY = targetLoc.getY();
-            double targetX = targetLoc.getX();
-            double targetZ = targetLoc.getZ();
+            if (Math.abs(targetLoc.getX() - currentX) > config.getHorizontalThreshold() ||
+                    Math.abs(targetLoc.getZ() - currentZ) > config.getHorizontalThreshold()) continue;
 
-            if (Math.abs(targetX - currentX) > config.getHorizontalThreshold() ||
-                Math.abs(targetZ - currentZ) > config.getHorizontalThreshold()) {
-                continue;
-            }
-
-            double yDiff = targetY - currentY;
-
+            double yDiff = targetLoc.getY() - currentY;
             if (yDiff > 0 && yDiff < smallestYDiff) {
                 smallestYDiff = yDiff;
                 bestIndex = i;
@@ -227,14 +183,10 @@ public class WASDNavigationManager {
         return bestIndex;
     }
 
-    /**
-     * 查找下方文本
-     */
+    /** Finds the text below the current selection. */
     private int findNextText(UUID playerId, int currentIndex) {
         Location[] locations = playerTextLocations.get(playerId);
-        if (locations == null || currentIndex < 0 || currentIndex >= locations.length) {
-            return -1;
-        }
+        if (locations == null || currentIndex < 0 || currentIndex >= locations.length) return -1;
 
         Location currentLoc = locations[currentIndex];
         if (currentLoc == null) return -1;
@@ -250,17 +202,10 @@ public class WASDNavigationManager {
             if (i == currentIndex || locations[i] == null) continue;
 
             Location targetLoc = locations[i];
-            double targetY = targetLoc.getY();
-            double targetX = targetLoc.getX();
-            double targetZ = targetLoc.getZ();
+            if (Math.abs(targetLoc.getX() - currentX) > config.getHorizontalThreshold() ||
+                    Math.abs(targetLoc.getZ() - currentZ) > config.getHorizontalThreshold()) continue;
 
-            if (Math.abs(targetX - currentX) > config.getHorizontalThreshold() ||
-                Math.abs(targetZ - currentZ) > config.getHorizontalThreshold()) {
-                continue;
-            }
-
-            double yDiff = currentY - targetY;
-
+            double yDiff = currentY - targetLoc.getY();
             if (yDiff > 0 && yDiff < smallestYDiff) {
                 smallestYDiff = yDiff;
                 bestIndex = i;
@@ -270,14 +215,10 @@ public class WASDNavigationManager {
         return bestIndex;
     }
 
-    /**
-     * 查找左侧文本
-     */
+    /** Finds the text to the left of the current selection. */
     private int findLeftText(Player player, UUID playerId, int currentIndex) {
         Location[] locations = playerTextLocations.get(playerId);
-        if (locations == null || currentIndex < 0 || currentIndex >= locations.length) {
-            return -1;
-        }
+        if (locations == null || currentIndex < 0 || currentIndex >= locations.length) return -1;
 
         Location currentLoc = locations[currentIndex];
         if (currentLoc == null) return -1;
@@ -292,9 +233,7 @@ public class WASDNavigationManager {
         for (int i = 0; i < locations.length; i++) {
             if (i == currentIndex || locations[i] == null) continue;
 
-            Location targetLoc = locations[i];
-            org.bukkit.util.Vector offset = targetLoc.toVector().subtract(currentLoc.toVector()).normalize();
-
+            org.bukkit.util.Vector offset = locations[i].toVector().subtract(currentLoc.toVector()).normalize();
             double dotProduct = offset.dot(leftVector);
             if (dotProduct > config.getDotProductThreshold() && dotProduct > bestDotProduct) {
                 bestDotProduct = dotProduct;
@@ -305,14 +244,10 @@ public class WASDNavigationManager {
         return bestIndex;
     }
 
-    /**
-     * 查找右侧文本
-     */
+    /** Finds the text to the right of the current selection. */
     private int findRightText(Player player, UUID playerId, int currentIndex) {
         Location[] locations = playerTextLocations.get(playerId);
-        if (locations == null || currentIndex < 0 || currentIndex >= locations.length) {
-            return -1;
-        }
+        if (locations == null || currentIndex < 0 || currentIndex >= locations.length) return -1;
 
         Location currentLoc = locations[currentIndex];
         if (currentLoc == null) return -1;
@@ -326,9 +261,7 @@ public class WASDNavigationManager {
         for (int i = 0; i < locations.length; i++) {
             if (i == currentIndex || locations[i] == null) continue;
 
-            Location targetLoc = locations[i];
-            org.bukkit.util.Vector offset = targetLoc.toVector().subtract(currentLoc.toVector()).normalize();
-
+            org.bukkit.util.Vector offset = locations[i].toVector().subtract(currentLoc.toVector()).normalize();
             double dotProduct = offset.dot(rightVector);
             if (dotProduct > config.getDotProductThreshold() && dotProduct > bestDotProduct) {
                 bestDotProduct = dotProduct;
@@ -339,9 +272,7 @@ public class WASDNavigationManager {
         return bestIndex;
     }
 
-    /**
-     * 设置选中索引
-     */
+    /** Sets the selected index. */
     private void setSelectedIndex(Player player, int index) {
         UUID playerId = player.getUniqueId();
         int oldIndex = playerSelectedIndex.getOrDefault(playerId, 0);
@@ -352,7 +283,7 @@ public class WASDNavigationManager {
             session.onSelectionChanged(player, oldIndex, index);
         }
 
-        // 更新PAPI变量中的位置
+        // Update the location in PAPI variables
         if (papiExpansion != null) {
             Location[] locations = playerTextLocations.get(playerId);
             if (locations != null && index >= 0 && index < locations.length && locations[index] != null) {
@@ -364,25 +295,19 @@ public class WASDNavigationManager {
         }
 
         if (config.isDebugMode()) {
-            plugin.getLogger().info("[WASDNavigation] 玩家 " + player.getName() + " 选中索引: " + index);
+            plugin.getLogger().info("[WASDNavigation] Player " + player.getName() + " selected index: " + index);
         }
     }
 
-    /**
-     * 执行选中的命令
-     */
+    /** Executes the currently selected command. */
     private void executeSelectedCommand(Player player) {
         UUID playerId = player.getUniqueId();
         int selectedIndex = playerSelectedIndex.getOrDefault(playerId, -1);
-        
-        if (selectedIndex < 0) {
-            return;
-        }
+
+        if (selectedIndex < 0) return;
 
         List<String> commands = playerTextCommands.get(playerId);
-        if (commands == null || selectedIndex >= commands.size()) {
-            return;
-        }
+        if (commands == null || selectedIndex >= commands.size()) return;
 
         String command = commands.get(selectedIndex);
         if (command != null && !command.isEmpty()) {
@@ -393,16 +318,12 @@ public class WASDNavigationManager {
         }
     }
 
-    /**
-     * 检查是否在冷却中
-     */
+    /** Checks whether the player is on cooldown. */
     private boolean isOnCooldown(UUID playerId) {
         return playerSelectionCooldown.getOrDefault(playerId, false);
     }
 
-    /**
-     * 开始冷却
-     */
+    /** Starts a selection cooldown. */
     private void startCooldown(UUID playerId) {
         playerSelectionCooldown.put(playerId, true);
         new BukkitRunnable() {
@@ -413,91 +334,75 @@ public class WASDNavigationManager {
         }.runTaskLater(plugin, SELECTION_COOLDOWN_MS / 50);
     }
 
-    /**
-     * 检查玩家是否启用WASD导航
-     */
+    /** Checks whether WASD navigation is enabled for the player. */
     private boolean isWASDEnabledForPlayer(UUID playerId) {
         WASDSession session = playerSessions.get(playerId);
         return session != null && session.isEnabled();
     }
 
-    /**
-     * 获取玩家的WASD会话
-     */
+    /** Returns the player's WASD session. */
     public WASDSession getPlayerSession(UUID playerId) {
         return playerSessions.get(playerId);
     }
 
-    /**
-     * 获取玩家的当前菜单
-     */
+    /** Returns the player's current menu. */
     public String getPlayerCurrentMenu(UUID playerId) {
         return playerCurrentMenus.get(playerId);
     }
 
-    /**
-     * 获取玩家的当前位置
-     */
+    /** Returns the player's current location. */
     public Location getPlayerCurrentLocation(UUID playerId) {
         String menuKey = playerCurrentMenus.get(playerId);
         if (menuKey == null) return null;
-        
+
         int index = playerSelectedIndex.getOrDefault(playerId, -1);
         if (index < 0) return null;
-        
+
         Location[] locations = playerTextLocations.get(playerId);
         if (locations == null || index >= locations.length) return null;
-        
+
         return locations[index];
     }
 
-    /**
-     * 为玩家启动WASD导航会话
-     */
+    /** Starts a WASD navigation session for the player. */
     public void startSession(Player player, Location[] textLocations, List<String> commands, int initialIndex) {
         startSession(player, null, textLocations, commands, initialIndex);
     }
 
-    /**
-     * 为玩家启动WASD导航会话（带菜单名称）
-     */
+    /** Starts a WASD navigation session for the player (with menu name). */
     public void startSession(Player player, String menuKey, Location[] textLocations, List<String> commands, int initialIndex) {
         UUID playerId = player.getUniqueId();
-        
+
         WASDSession session = new WASDSession(plugin, player, true);
         playerSessions.put(playerId, session);
         playerTextLocations.put(playerId, textLocations);
         playerTextCommands.put(playerId, commands);
         playerSelectedIndex.put(playerId, initialIndex);
         playerSelectionCooldown.put(playerId, false);
-        
-        // 更新当前菜单信息
+
+        // Update current menu information
         if (menuKey != null) {
             playerCurrentMenus.put(playerId, menuKey);
-            
-            // 更新PAPI变量
+
+            // Update PAPI variables
             if (papiExpansion != null && textLocations != null && textLocations.length > 0) {
                 papiExpansion.updatePlayerMenu(playerId, menuKey, textLocations[initialIndex >= 0 && initialIndex < textLocations.length ? initialIndex : 0]);
             }
         }
 
         if (config.isDebugMode()) {
-            plugin.getLogger().info("[WASDNavigation] 为玩家 " + player.getName() + " 启动WASD导航会话，菜单: " + (menuKey != null ? menuKey : "未知"));
+            plugin.getLogger().info("[WASDNavigation] Started WASD navigation session for player " + player.getName() + ", menu: " + (menuKey != null ? menuKey : "unknown"));
         }
     }
 
-    /**
-     * 更新玩家的文本位置
-     */
+    /** Updates the player's text locations. */
     public void updateTextLocations(Player player, Location[] textLocations, List<String> commands) {
         UUID playerId = player.getUniqueId();
         playerTextLocations.put(playerId, textLocations);
         playerTextCommands.put(playerId, commands);
     }
 
-    /**
-     * 停止玩家的WASD导航会话
-     */
+    /** Stops the player's WASD navigation session. */
     public void stopSession(Player player) {
         UUID playerId = player.getUniqueId();
         playerSessions.remove(playerId);
@@ -506,62 +411,50 @@ public class WASDNavigationManager {
         playerSelectionCooldown.remove(playerId);
         playerTextCommands.remove(playerId);
         playerCurrentMenus.remove(playerId);
-        
-        // 清除PAPI变量
+
+        // Clear PAPI variables
         if (papiExpansion != null) {
             papiExpansion.clearPlayerMenu(playerId);
         }
 
         if (config.isDebugMode()) {
-            plugin.getLogger().info("[WASDNavigation] 停止玩家 " + player.getName() + " 的WASD导航会话");
+            plugin.getLogger().info("[WASDNavigation] Stopped WASD navigation session for player " + player.getName());
         }
     }
 
-    /**
-     * 获取玩家当前选中的索引
-     */
+    /** Returns the currently selected index for the player. */
     public int getSelectedIndex(Player player) {
         return playerSelectedIndex.getOrDefault(player.getUniqueId(), -1);
     }
 
-    /**
-     * 获取配置
-     */
-    public WASDConfig getConfig() {
-        return config;
-    }
+    /** Returns the configuration. */
+    public WASDConfig getConfig() { return config; }
 
-    /**
-     * 重载配置
-     */
-    public void reloadConfig() {
-        config.reload();
-    }
+    /** Reloads the configuration. */
+    public void reloadConfig() { config.reload(); }
 
-    /**
-     * 关闭模块
-     */
+    /** Shuts down the module. */
     public void shutdown() {
         if (packetListener != null && registered) {
             PacketEvents.getAPI().getEventManager().unregisterListener(packetListener);
         }
-        
-        // 注销PAPI扩展
+
+        // Unregister PAPI expansion
         if (papiExpansion != null) {
             try {
                 papiExpansion.unregister();
             } catch (Exception e) {
-                // 忽略错误
+                // Ignore errors
             }
         }
-        
+
         playerSessions.clear();
         playerTextLocations.clear();
         playerSelectedIndex.clear();
         playerSelectionCooldown.clear();
         playerTextCommands.clear();
         playerCurrentMenus.clear();
-        
+
         registered = false;
     }
 }

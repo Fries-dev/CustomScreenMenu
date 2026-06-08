@@ -13,8 +13,8 @@ import org.joml.Vector3f;
 import java.util.List;
 
 /**
- * WASD导航会话
- * 管理单个玩家的WASD导航状态
+ * WASD navigation session.
+ * Manages the WASD navigation state for a single player.
  */
 public class WASDSession {
 
@@ -31,9 +31,7 @@ public class WASDSession {
         this.enabled = enabled;
     }
 
-    /**
-     * 设置文本显示实体
-     */
+    /** Sets the text display entities. */
     public void setTextDisplays(TextDisplay[] displays, List<Double> scales) {
         this.textDisplays = displays;
         this.configScales = scales;
@@ -43,80 +41,72 @@ public class WASDSession {
         }
     }
 
-    /**
-     * 当选中项改变时调用
-     */
+    /** Called when the selected item changes. */
     public void onSelectionChanged(Player player, int oldIndex, int newIndex) {
         if (textDisplays == null) return;
 
-        // 恢复旧选项的大小
+        // Restore the previous selection's scale
         if (oldIndex >= 0 && oldIndex < textDisplays.length && textDisplays[oldIndex] != null) {
-            double oldScale = configScales != null && oldIndex < configScales.size() 
-                ? configScales.get(oldIndex) : 1.0;
+            double oldScale = configScales != null && oldIndex < configScales.size()
+                    ? configScales.get(oldIndex) : 1.0;
             setDisplayScale(textDisplays[oldIndex], oldScale);
         }
 
-        // 放大新选项
+        // Enlarge the new selection
         if (newIndex >= 0 && newIndex < textDisplays.length && textDisplays[newIndex] != null) {
-            double newScale = configScales != null && newIndex < configScales.size() 
-                ? configScales.get(newIndex) + 0.5 : 1.5;
+            double newScale = configScales != null && newIndex < configScales.size()
+                    ? configScales.get(newIndex) + 0.5 : 1.5;
             setDisplayScale(textDisplays[newIndex], newScale);
         }
 
-        // 播放选中音效
+        // Play the selection sound
         playSelectionSound(player);
     }
 
-    /**
-     * 设置显示实体的缩放
-     */
+    /** Sets the scale of a display entity. */
     private void setDisplayScale(TextDisplay display, double scale) {
         if (display == null || !display.isValid()) return;
-        
+
         try {
             display.setTransformation(new Transformation(
-                new Vector3f(-1, 0, 0),
-                new AxisAngle4f(),
-                new Vector3f((float) scale, (float) scale, (float) scale),
-                new AxisAngle4f()
+                    new Vector3f(-1, 0, 0),
+                    new AxisAngle4f(),
+                    new Vector3f((float) scale, (float) scale, (float) scale),
+                    new AxisAngle4f()
             ));
         } catch (Exception e) {
-            // 忽略错误
+            // Ignore errors
         }
     }
 
-    /**
-     * 播放选中音效
-     */
+    /** Plays the selection sound. */
     private void playSelectionSound(Player player) {
         WASDConfig config = WASDNavigationManager.getInstance().getConfig();
         if (config.isSoundEnabled()) {
             try {
-                player.playSound(player.getLocation(), 
-                    config.getSelectionSound(), 
-                    config.getSoundVolume(), 
-                    config.getSoundPitch());
+                player.playSound(player.getLocation(),
+                        config.getSelectionSound(),
+                        config.getSoundVolume(),
+                        config.getSoundPitch());
             } catch (Exception e) {
-                // 忽略音效错误
+                // Ignore sound errors
             }
         }
     }
 
-    /**
-     * 执行命令
-     */
+    /** Executes a command. */
     public void onExecuteCommand(Player player, String command, int index) {
         if (command == null || command.isEmpty()) return;
 
         WASDConfig config = WASDNavigationManager.getInstance().getConfig();
-        
+
         if (config.isDebugMode()) {
-            plugin.getLogger().info("[WASDNavigation] 玩家 " + player.getName() + " 执行命令: " + command);
+            plugin.getLogger().info("[WASDNavigation] Player " + player.getName() + " executing command: " + command);
         }
 
-        // 解析命令类型并执行
+        // Parse command type and execute
         String processedCmd = command;
-        
+
         if (processedCmd.toLowerCase().startsWith("[console]")) {
             String cmd = processedCmd.replaceAll("\\[console\\]", "").trim();
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
@@ -137,36 +127,24 @@ public class WASDSession {
             player.performCommand(cmd);
         } else if (processedCmd.toLowerCase().startsWith("[server]")) {
             String server = processedCmd.replaceAll("\\[server\\]", "").trim();
-            player.sendPluginMessage(plugin, "BungeeCord", 
-                ("Connect " + server).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            player.sendPluginMessage(plugin, "BungeeCord",
+                    ("Connect " + server).getBytes(java.nio.charset.StandardCharsets.UTF_8));
         } else if (processedCmd.toLowerCase().startsWith("[link]")) {
             String link = processedCmd.replaceAll("\\[link\\]", "").trim();
             player.spigot().sendMessage(new net.md_5.bungee.api.chat.TextComponent(
-                ChatColor.GREEN + "点击打开链接: " + link
+                    ChatColor.GREEN + "Click to open link: " + link
             ));
         } else {
             player.performCommand(processedCmd);
         }
     }
 
-    /**
-     * 是否启用
-     */
-    public boolean isEnabled() {
-        return enabled;
-    }
+    /** Checks whether the session is enabled. */
+    public boolean isEnabled() { return enabled; }
 
-    /**
-     * 设置启用状态
-     */
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
+    /** Sets the enabled state. */
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
 
-    /**
-     * 获取玩家
-     */
-    public Player getPlayer() {
-        return player;
-    }
+    /** Returns the player. */
+    public Player getPlayer() { return player; }
 }

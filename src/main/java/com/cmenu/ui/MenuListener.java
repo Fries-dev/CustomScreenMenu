@@ -64,7 +64,7 @@ public class MenuListener implements Listener {
         }
 
         String prefix = plugin.getConfig().getString("messages.prefix", "&c[CursorMenu] ");
-        String blocked = plugin.getConfig().getString("messages.command_blocked", "&7该命令在菜单模式下不可用。");
+        String blocked = plugin.getConfig().getString("messages.command_blocked", "&7This command is not available in menu mode.");
         player.sendMessage(ChatColor.translateAlternateColorCodes('&', prefix + blocked));
         event.setCancelled(true);
     }
@@ -72,32 +72,32 @@ public class MenuListener implements Listener {
     @EventHandler
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
-        // 检查玩家是否在特定的登录注册菜单中
+        // Check if the player is in a specific login/register menu
         String currentMenu = plugin.getCurrentPlayerMenu(player);
-        if (currentMenu == null || (!currentMenu.equals("登录菜单") && !currentMenu.equals("注册菜单"))) {
-            return; // 不在登录注册菜单中，使用正常聊天功能
+        if (currentMenu == null || (!currentMenu.equals("Login Menu") && !currentMenu.equals("Register Menu"))) {
+            return; // Not in a login/register menu, use normal chat functionality
         }
 
-        // 取消聊天事件，不让消息发送到其他玩家
+        // Cancel the chat event so the message is not sent to other players
         event.setCancelled(true);
 
-        // 获取玩家当前应该输入的字段
+        // Get the field the player is currently supposed to be filling in
         String inputField = plugin.getCurrentPlayerInputField(player);
         if (inputField == null || inputField.isEmpty()) {
-            // 没有指定输入字段，忽略输入
+            // No input field specified, ignore the input
             return;
         }
 
-        // 获取玩家输入的内容
+        // Get the content entered by the player
         String inputValue = event.getMessage();
 
-        // 保存输入的数据
+        // Save the entered data
         plugin.setPlayerInputData(player, inputField, inputValue);
 
-        // 发送确认消息给玩家
-        player.sendMessage(ChatColor.GREEN + "[CursorMenu] " + inputField + " 已设置为: " + inputValue);
+        // Send a confirmation message to the player
+        player.sendMessage(ChatColor.GREEN + "[CursorMenu] " + inputField + " has been set to: " + inputValue);
 
-        // 在主线程中刷新菜单以更新显示
+        // Refresh the menu on the main thread to update the display
         foliaLib.scheduling().entitySpecificScheduler(player).run(() -> {
             plugin.setupCursor(player, currentMenu);
         }, null);
@@ -110,8 +110,8 @@ public class MenuListener implements Listener {
             player.sendMessage(
                     ChatColor.translateAlternateColorCodes('&',
                             "&a[CustomScreenMenu] &fThis version is open source and does not receive author support and assistance\n" +
-                                    "&f插件版本：&e" + plugin.getDescription().getVersion() + "\n" +
-                                    "&f作者：&e野比大雄\nQQ:3357153117\n" +
+                                    "&fPlugin Version: &e" + plugin.getDescription().getVersion() + "\n" +
+                                    "&fAuthor: &eNobi Nobita\nQQ: 3357153117\n" +
                                     "&fDiscord: https://discord.gg/YpZNACup"
                     )
             );

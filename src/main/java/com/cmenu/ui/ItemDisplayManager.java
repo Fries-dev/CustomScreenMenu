@@ -19,7 +19,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-/* ------------- 辅助类 ------------- */
+/* ------------- Helper classes ------------- */
 class PlayerDisplayPair {
     final Player player;
     final ItemDisplay display;
@@ -47,11 +47,11 @@ public class ItemDisplayManager implements Listener {
     private final File configFile;
     private FileConfiguration config;
 
-    /* 线程安全容器 */
-    private final List<PlayerDisplayPair> activeDisplays = Collections.synchronizedList(new ArrayList<>());
-    private final List<PlayerTaskPair> displayTasks    = Collections.synchronizedList(new ArrayList<>());
-    private final Map<Player, String>  playerActiveItems = new ConcurrentHashMap<>();
-    private final Map<Player, Pig>     ridingPig        = new ConcurrentHashMap<>();
+    /* Thread-safe containers */
+    private final List<PlayerDisplayPair> activeDisplays    = Collections.synchronizedList(new ArrayList<>());
+    private final List<PlayerTaskPair>    displayTasks      = Collections.synchronizedList(new ArrayList<>());
+    private final Map<Player, String>     playerActiveItems = new ConcurrentHashMap<>();
+    private final Map<Player, Pig>        ridingPig         = new ConcurrentHashMap<>();
 
     public ItemDisplayManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -60,7 +60,7 @@ public class ItemDisplayManager implements Listener {
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
-    /* ---------------- 配置 ---------------- */
+    /* ---------------- Configuration ---------------- */
     public void loadConfig() {
         if (!configFile.exists()) plugin.saveResource("items.yml", false);
         config = YamlConfiguration.loadConfiguration(configFile);
@@ -81,19 +81,19 @@ public class ItemDisplayManager implements Listener {
             Method method = ItemDisplay.class.getMethod("setTeleportDuration", int.class);
             method.invoke(display, duration);
         } catch (NoSuchMethodException ignored) {
-            // 旧版本不支持的话，跳过
+            // Skip if not supported on older versions
         } catch (Exception e) {
-            plugin.getLogger().warning("无法设置 ItemDisplay 的 teleport duration: " + e.getMessage());
+            plugin.getLogger().warning("Failed to set ItemDisplay teleport duration: " + e.getMessage());
         }
     }
 
 
-    /* ---------------- 显示 / 隐藏 ---------------- */
+    /* ---------------- Show / Hide ---------------- */
     public boolean showItem(Player player, String itemId) {
         hideItem(player);
 
         if (!config.contains("display-items." + itemId)) {
-            player.sendMessage(ChatColor.RED + "物品ID不存在: " + itemId);
+            player.sendMessage(ChatColor.RED + "Item ID does not exist: " + itemId);
             return false;
         }
 
@@ -129,13 +129,13 @@ public class ItemDisplayManager implements Listener {
             display.setViewRange(100);
             display.setPersistent(false);
             display.setBillboard(ItemDisplay.Billboard.FIXED);
-            setTeleportDurationSafe(display, 2); // 平滑移动
+            setTeleportDurationSafe(display, 2); // Smooth movement
             setScale(display, scale);
 
             activeDisplays.add(new PlayerDisplayPair(player, display, itemId));
             playerActiveItems.put(player, itemId);
 
-            /* ---------- 同步位置更新 ---------- */
+            /* ---------- Synchronous position update ---------- */
             int posTaskId = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
                 if (!player.isOnline() || !display.isValid()) return;
                 Location newEye = player.getEyeLocation();
@@ -147,7 +147,7 @@ public class ItemDisplayManager implements Listener {
                 display.teleport(newLoc);
             }, 0, 1).getTaskId();
 
-            /* ---------- 同步旋转更新 ---------- */
+            /* ---------- Synchronous rotation update ---------- */
             int rotTaskId = -1;
             if (rotate) {
                 final float radPerTick = rotateSpeed * 0.0174533f;
@@ -164,13 +164,13 @@ public class ItemDisplayManager implements Listener {
             }
 
             displayTasks.add(new PlayerTaskPair(player, posTaskId, rotTaskId));
-            player.sendMessage(ChatColor.GREEN + "已显示物品: " + itemId);
+            player.sendMessage(ChatColor.GREEN + "Item displayed: " + itemId);
 
             mountPig(player);
             return true;
         } catch (Exception e) {
-            player.sendMessage(ChatColor.RED + "显示失败: " + e.getMessage());
-            plugin.getLogger().warning("显示物品失败: " + e.getMessage());
+            player.sendMessage(ChatColor.RED + "Display failed: " + e.getMessage());
+            plugin.getLogger().warning("Failed to display item: " + e.getMessage());
             return false;
         }
     }
@@ -200,7 +200,7 @@ public class ItemDisplayManager implements Listener {
         playerActiveItems.remove(player);
     }
 
-    /* ---------------- 工具 ---------------- */
+    /* ---------------- Utilities ---------------- */
     private Vector getRightVector(Location loc) {
         float yawRad = (float) Math.toRadians(loc.getYaw());
         return new Vector(Math.cos(yawRad), 0, Math.sin(yawRad)).normalize();
@@ -234,7 +234,7 @@ public class ItemDisplayManager implements Listener {
                 : new ArrayList<>();
     }
 
-    /* ---------------- 骑猪/下猪 ---------------- */
+    /* ---------------- Mount / Dismount Pig ---------------- */
     private void mountPig(Player player) {
         if (player.getVehicle() instanceof Pig pig && ridingPig.get(player) == pig) return;
         if (player.isInsideVehicle()) return;
@@ -265,7 +265,7 @@ public class ItemDisplayManager implements Listener {
         }
     }
 
-    /* ---------------- 事件 ---------------- */
+    /* ---------------- Events ---------------- */
     public String getPlayerActiveItemId(Player player) {
         return playerActiveItems.getOrDefault(player, "");
     }

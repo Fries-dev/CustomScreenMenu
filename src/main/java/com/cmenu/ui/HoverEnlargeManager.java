@@ -46,7 +46,7 @@ public class HoverEnlargeManager {
                     TextDisplay closestDisplay = null;
                     double minDistance = Double.MAX_VALUE;
 
-                    // 查找最近的文本显示
+                    // Find the nearest text display
                     for (MenuLayout layout : section.layouts.values()) {
                         if (!layout.isHoverEnlargeEnabled()) continue;
 
@@ -69,10 +69,10 @@ public class HoverEnlargeManager {
 
                         Location buttonLoc = cameraLoc.clone().add(offset);
 
-                        // 检测光标是否在文本附近
+                        // Detect whether the cursor is near the text
                         String layoutKey = menuKey + ":" + layout.key;
 
-                        // 查找对应的TextDisplay实体
+                        // Find the corresponding TextDisplay entity
                         TextDisplay display = null;
                         for (TextDisplay d : cursorLoc.getWorld().getEntitiesByClass(TextDisplay.class)) {
                             if (layoutKey.equals(d.getName())) {
@@ -82,52 +82,52 @@ public class HoverEnlargeManager {
                         }
 
                         if (display != null && TextDisplayHitBox.isInside(display, cursorLoc)) {
-                            minDistance = 0; // 只要命中就取这一个
+                            minDistance = 0; // Take this one as soon as it hits
                             closestDisplay = display;
-                            break; // 找到后立即跳出循环
+                            break; // Break immediately once found
                         }
                     }
 
-                    // 处理悬停放大效果
+                    // Handle hover-enlarge effect
                     TextDisplay currentlyEnlarged = enlargedTextDisplays.get(player.getUniqueId());
 
                     if (closestDisplay != null) {
-                        // 如果有新的最近显示项，放大它
+                        // If there is a new closest display, enlarge it
                         if (currentlyEnlarged != closestDisplay) {
-                            // 重置之前放大的显示项
+                            // Reset the previously enlarged display
                             if (currentlyEnlarged != null) {
                                 resetTextDisplaySize(currentlyEnlarged);
                                 enlargedTextDisplays.remove(player.getUniqueId());
                             }
 
-                            // 放大新的显示项
+                            // Enlarge the new display
                             enlargeTextDisplay(closestDisplay);
                             enlargedTextDisplays.put(player.getUniqueId(), closestDisplay);
                         }
                     } else if (currentlyEnlarged != null) {
-                        // 如果没有最近的显示项，但有之前放大的项，则重置它
+                        // No closest display found, but a previously enlarged one exists — reset it
                         resetTextDisplaySize(currentlyEnlarged);
                         enlargedTextDisplays.remove(player.getUniqueId());
                     }
                 }
             }
         };
-        hoverDetectionTask.runTaskTimer(plugin, 0L, 1L); // 每tick检查一次
+        hoverDetectionTask.runTaskTimer(plugin, 0L, 1L); // Check every tick
     }
 
     private void enlargeTextDisplay(TextDisplay textDisplay) {
-        // 首先确保重置任何现有的变换
+        // Ensure any existing transformation is reset first
         resetTextDisplaySize(textDisplay);
 
         var transformation = textDisplay.getTransformation();
         Vector3f currentScale = transformation.getScale();
 
-        // 保存原始尺寸（仅当尚未保存时）
+        // Save the original scale (only if not already saved)
         if (!originalScales.containsKey(textDisplay.getUniqueId())) {
             originalScales.put(textDisplay.getUniqueId(), new Vector3f(currentScale));
         }
 
-        // 获取放大倍数
+        // Get the enlarge scale factor
         String name = textDisplay.getName();
         MenuLayout layout = plugin.sectionManager.getLayout(name);
         if (layout != null && layout.isHoverEnlargeEnabled()) {
@@ -154,13 +154,13 @@ public class HoverEnlargeManager {
     }
 
     public void cleanup() {
-        // 停止检测任务
+        // Stop the detection task
         if (hoverDetectionTask != null) {
             hoverDetectionTask.cancel();
             hoverDetectionTask = null;
         }
 
-        // 重置所有放大的文本显示
+        // Reset all enlarged text displays
         for (TextDisplay display : enlargedTextDisplays.values()) {
             resetTextDisplaySize(display);
         }

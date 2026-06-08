@@ -8,8 +8,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.List;
 
 /**
- * WASD导航钩子类
- * 提供与CMP菜单系统的集成接口
+ * WASD navigation hook class.
+ * Provides an integration interface with the CMP menu system.
  */
 public class WASDNavigationHook {
 
@@ -30,135 +30,96 @@ public class WASDNavigationHook {
         return instance;
     }
 
-    public static WASDNavigationHook getInstance() {
-        return instance;
-    }
+    public static WASDNavigationHook getInstance() { return instance; }
 
-    /**
-     * 初始化钩子
-     */
+    /** Initializes the hook. */
     public void initialize() {
         if (!navigationManager.getConfig().isEnabled()) {
-            plugin.getLogger().info("[WASDHook] WASD导航系统未启用，跳过初始化");
+            plugin.getLogger().info("[WASDHook] WASD navigation system is not enabled, skipping initialization");
             return;
         }
 
         navigationManager.initialize();
         initialized = true;
-        plugin.getLogger().info("[WASDHook] WASD导航钩子已初始化");
+        plugin.getLogger().info("[WASDHook] WASD navigation hook initialized");
     }
 
-    /**
-     * 清理资源
-     */
+    /** Cleans up resources. */
     public void cleanup() {
         if (navigationManager != null) {
             navigationManager.shutdown();
         }
     }
 
-    /**
-     * 当玩家打开菜单时调用
-     */
-    public void onMenuOpen(Player player, String menuKey, Location[] textLocations, 
-                          List<String> commands, TextDisplay[] textDisplays, List<Double> scales) {
-        if (!initialized || !navigationManager.getConfig().isMenuEnabled(menuKey)) {
-            return;
-        }
+    /** Called when a player opens a menu. */
+    public void onMenuOpen(Player player, String menuKey, Location[] textLocations,
+                           List<String> commands, TextDisplay[] textDisplays, List<Double> scales) {
+        if (!initialized || !navigationManager.getConfig().isMenuEnabled(menuKey)) return;
 
-        if (navigationManager.getConfig().isPlayerDisabled(player.getName())) {
-            return;
-        }
+        if (navigationManager.getConfig().isPlayerDisabled(player.getName())) return;
 
         WASDSession session = new WASDSession(plugin, player, true);
         session.setTextDisplays(textDisplays, scales);
-        
+
         navigationManager.startSession(player, menuKey, textLocations, commands, 0);
-        
+
         if (navigationManager.getConfig().isDebugMode()) {
-            plugin.getLogger().info("[WASDHook] 为玩家 " + player.getName() + " 启用WASD导航，菜单: " + menuKey);
+            plugin.getLogger().info("[WASDHook] WASD navigation enabled for player " + player.getName() + ", menu: " + menuKey);
         }
     }
 
-    /**
-     * 当玩家关闭菜单时调用
-     */
+    /** Called when a player closes a menu. */
     public void onMenuClose(Player player) {
-        if (!initialized) {
-            return;
-        }
-
+        if (!initialized) return;
         navigationManager.stopSession(player);
     }
 
-    /**
-     * 当菜单切换时调用
-     */
+    /** Called when a menu switches. */
     public void onMenuSwitch(Player player, String newMenuKey, Location[] textLocations,
-                            List<String> commands, TextDisplay[] textDisplays, List<Double> scales) {
-        if (!initialized) {
-            return;
-        }
+                             List<String> commands, TextDisplay[] textDisplays, List<Double> scales) {
+        if (!initialized) return;
 
         navigationManager.stopSession(player);
 
-        if (navigationManager.getConfig().isMenuEnabled(newMenuKey) && 
-            !navigationManager.getConfig().isPlayerDisabled(player.getName())) {
-            
+        if (navigationManager.getConfig().isMenuEnabled(newMenuKey) &&
+                !navigationManager.getConfig().isPlayerDisabled(player.getName())) {
+
             WASDSession session = new WASDSession(plugin, player, true);
             session.setTextDisplays(textDisplays, scales);
             navigationManager.startSession(player, newMenuKey, textLocations, commands, 0);
         }
     }
 
-    /**
-     * 获取玩家当前选中的索引
-     */
+    /** Returns the currently selected index for the player. */
     public int getSelectedIndex(Player player) {
         return navigationManager.getSelectedIndex(player);
     }
 
-    /**
-     * 切换玩家的WASD导航状态
-     */
+    /** Toggles the WASD navigation state for the player. */
     public boolean toggleWASDForPlayer(Player player) {
         return navigationManager.getConfig().togglePlayer(player.getName());
     }
 
-    /**
-     * 检查WASD导航是否启用
-     */
+    /** Checks whether WASD navigation is enabled. */
     public boolean isEnabled() {
         return initialized && navigationManager.getConfig().isEnabled();
     }
 
-    /**
-     * 检查指定菜单是否启用WASD导航
-     */
+    /** Checks whether WASD navigation is enabled for the specified menu. */
     public boolean isMenuEnabled(String menuKey) {
         return navigationManager.getConfig().isMenuEnabled(menuKey);
     }
 
-    /**
-     * 检查玩家是否可以使用WASD导航
-     */
+    /** Checks whether the player can use WASD navigation. */
     public boolean canPlayerUseWASD(Player player, String menuKey) {
-        if (!isEnabled() || !isMenuEnabled(menuKey)) {
-            return false;
-        }
+        if (!isEnabled() || !isMenuEnabled(menuKey)) return false;
         return !navigationManager.getConfig().isPlayerDisabled(player.getName());
     }
 
-    /**
-     * 获取导航管理器
-     */
-    public WASDNavigationManager getNavigationManager() {
-        return navigationManager;
-    }
+    /** Returns the navigation manager. */
+    public WASDNavigationManager getNavigationManager() { return navigationManager; }
 
-    /**
-     * 重载配置
-     */
+    /** Reloads the configuration. */
     public void reload() {
         if (navigationManager != null) {
             navigationManager.reloadConfig();

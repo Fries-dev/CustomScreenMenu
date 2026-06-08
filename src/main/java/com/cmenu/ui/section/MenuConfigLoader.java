@@ -27,7 +27,7 @@ public class MenuConfigLoader {
         for (File file : files) {
             try {
                 YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
-                Set<String> keys = config.getKeys(false); // 获取顶层键
+                Set<String> keys = config.getKeys(false); // Get top-level keys
 
                 for (String menuKey : keys) {
                     ConfigurationSection menuSection = config.getConfigurationSection(menuKey);
@@ -37,7 +37,7 @@ public class MenuConfigLoader {
                 }
 
             } catch (Exception e) {
-                Bukkit.getLogger().warning("加载菜单文件失败: " + file.getName() + " - " + e.getMessage());
+                Bukkit.getLogger().warning("Failed to load menu file: " + file.getName() + " - " + e.getMessage());
             }
         }
     }
@@ -66,11 +66,10 @@ public class MenuConfigLoader {
             autoCommandDelays = autoCmdSection.getLongList("delays");
         }
 
-        // 读取WASD导航启用配置
+        // Read WASD navigation enabled config
         boolean wasdEnabled = menuSection.getBoolean("wasd-enabled", true);
 
         Section section = new Section(distance, world, x, y, z, yaw, pitch, permission, autoCommands, autoCommandDelays, autoCommandsEnabled, wasdEnabled);
-
 
         ConfigurationSection layoutSection = menuSection.getConfigurationSection("layout");
         if (layoutSection != null) {
@@ -109,33 +108,31 @@ public class MenuConfigLoader {
                 boolean nextMenuEnabled = layoutConfig.getBoolean("next-menu.enabled", false);
                 String nextMenuKey = layoutConfig.getString("next-menu.menu", "");
                 String buttonPermission = layoutConfig.getString("permission", "");
-                
-                // 新增解析 link 字段
+
+                // Parse the link field
                 String linkCommand = layoutConfig.getString("link", "");
 
-                // 获取目标世界，如果不存在则使用当前世界
+                // Use the target world; fall back if it doesn't exist
                 org.bukkit.World worldObj = Bukkit.getWorld(targetWorld);
                 if (worldObj == null) {
-                    // 如果目标世界不存在，使用默认世界
+                    // Fall back to the menu's default world
                     worldObj = Bukkit.getWorld(world);
                     if (worldObj == null) {
-                        // 如果默认世界也不存在，使用第一个可用世界
+                        // Fall back to the first available world
                         if (!Bukkit.getWorlds().isEmpty()) {
                             worldObj = Bukkit.getWorlds().get(0);
                         }
                     }
                 }
-                
-                Location teleportLoc = new Location(
-                        worldObj, targetX, targetY, targetZ, 0, 0
-                );
+
+                Location teleportLoc = new Location(worldObj, targetX, targetY, targetZ, 0, 0);
 
                 MenuLayout layout = new MenuLayout(
                         layoutKey, name, commands, stop, lx, ly, lz,
                         teleportEnabled, backOriginal, teleportLoc,
                         stopCmdEnabled, stopCommands,
                         tiltX, tiltY, tiltZ, buttonPermission,
-                        nextMenuEnabled, nextMenuKey, linkCommand // 使用新增的构造函数
+                        nextMenuEnabled, nextMenuKey, linkCommand // Use the new constructor
                 );
 
                 layout.loadConfig(layoutConfig);

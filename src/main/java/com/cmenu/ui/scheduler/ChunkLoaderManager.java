@@ -13,64 +13,59 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 区块加载管理器
- * 负责管理菜单相关的区块加载和卸载
+ * Chunk loader manager.
+ * Responsible for managing chunk loading and unloading related to menus.
  */
 public class ChunkLoaderManager {
-    
+
     private final CursorMenuPlugin plugin;
     private BukkitTask chunkLoaderTask;
-    
-    // 存储需要持续加载的区块 (世界名 -> 区块坐标集合)
+
+    // Stores chunks that must remain loaded (world name -> set of chunk keys)
     private final Map<String, Set<Long>> forcedLoadedChunks = new ConcurrentHashMap<>();
     private final Map<String, Set<Long>> persistentChunks = new ConcurrentHashMap<>();
-    
-    // 区块加载任务的ID，用于取消任务
+
     private boolean isTaskRunning = false;
-    
+
     public ChunkLoaderManager(CursorMenuPlugin plugin) {
         this.plugin = plugin;
     }
-    
-    /**
-     * 启动区块加载任务
-     */
+
+    /** Starts the chunk loader task. */
     public void startChunkLoaderTask() {
-        // 停止旧任务
+        // Stop any existing task
         stopChunkLoaderTask();
-        
-        // 初始化强制加载
+
+        // Initialize force-loaded chunks
         updatePersistentChunks();
-        
-        // 每30秒验证一次区块状态（防止意外卸载）
-        chunkLoaderTask = Bukkit.getScheduler().runTaskTimer(plugin, this::updatePersistentChunks, 0L, 600L); // 30秒一次
+
+        // Verify chunk state every 30 seconds to prevent accidental unloading
+        chunkLoaderTask = Bukkit.getScheduler().runTaskTimer(plugin, this::updatePersistentChunks, 0L, 600L);
         isTaskRunning = true;
-        
+
         if (plugin.getConfig().getBoolean("Debug", false)) {
-            plugin.getLogger().info("区块加载任务已启动");
+            plugin.getLogger().info("Chunk loader task started");
         }
     }
-    
-    /**
-     * 停止区块加载任务
-     */
+
+    /** Stops the chunk loader task. */
     public void stopChunkLoaderTask() {
-        // 取消任务
+        // Cancel the task
         if (chunkLoaderTask != null) {
             chunkLoaderTask.cancel();
             chunkLoaderTask = null;
         }
-        
-        // 解除所有强制加载的区块
+
+        // Release all force-loaded chunks
         for (Map.Entry<String, Set<Long>> entry : forcedLoadedChunks.entrySet()) {
             String worldName = entry.getKey();
             World world = Bukkit.getWorld(worldName);
             if (world == null) continue;
-            
+
             for (long chunkKey : entry.getValue()) {
                 int x = (int) (chunkKey >> 32);
                 int z = (int) (chunkKey & 0xFFFFFFFFL);
-                
+
                 Chunk chunk = world.getChunkAt(x, z);
                 if (chunk != null) {
                     chunk.setForceLoaded(false);
@@ -79,40 +74,38 @@ public class ChunkLoaderManager {
         }
         forcedLoadedChunks.clear();
         persistentChunks.clear();
-        
+
         isTaskRunning = false;
-        
+
         if (plugin.getConfig().getBoolean("Debug", false)) {
-            plugin.getLogger().info("区块加载任务已停止");
+            plugin.getLogger().info("Chunk loader task stopped");
         }
     }
-    
-    /**
-     * 更新需要持续加载的区块列表
-     */
+
+    /** Updates the list of chunks that must remain loaded. */
     public void updatePersistentChunks() {
-        // 1. 先记录当前所有强制加载的区块（用于后续清理）
+        // 1. Record all currently force-loaded chunks (for cleanup later)
         Map<String, Set<Long>> oldChunks = new HashMap<>();
         for (Map.Entry<String, Set<Long>> entry : forcedLoadedChunks.entrySet()) {
             oldChunks.put(entry.getKey(), new HashSet<>(entry.getValue()));
         }
-        
-        // 2. 计算新的需要加载的区块（完全新建，不修改旧集合）
+
+        // 2. Compute the new set of chunks that need loading (built fresh, not modifying the old set)
         Map<String, Set<Long>> newChunks = new HashMap<>();
-        
-        // 获取所有菜单部分
+
+        // Gather all menu sections
         Map<String, Section> allSections = plugin.sectionManager.getAll();
         for (Section section : allSections.values()) {
             World world = Bukkit.getWorld(section.world);
             if (world == null) continue;
-            
-            // 计算菜单相机位置所在的区块
+
+            // Compute the chunk containing the menu camera position
             int chunkX = (int) Math.floor(section.cameraX / 16);
             int chunkZ = (int) Math.floor(section.cameraZ / 16);
             long chunkKey = ((long) chunkX << 32) | (chunkZ & 0xFFFFFFFFL);
             newChunks.computeIfAbsent(section.world, k -> new HashSet<>()).add(chunkKey);
-            
-            // 处理菜单内其他元素的区块
+
+            // Process chunks for other elements in the menu
             if (section.layouts != null) {
                 for (MenuLayout layout : section.layouts.values()) {
                     int layoutChunkX = (int) Math.floor((section.cameraX + layout.x) / 16);
@@ -122,85 +115,79 @@ public class ChunkLoaderManager {
                 }
             }
         }
-        
-        // 3. 对新增的区块：标记为强制加载
+
+        // 3. Mark newly added chunks as force-loaded
         for (Map.Entry<String, Set<Long>> entry : newChunks.entrySet()) {
             String worldName = entry.getKey();
             World world = Bukkit.getWorld(worldName);
             if (world == null) continue;
-            
+
             Set<Long> chunkKeys = entry.getValue();
             for (long chunkKey : chunkKeys) {
                 int x = (int) (chunkKey >> 32);
                 int z = (int) (chunkKey & 0xFFFFFFFFL);
-                
-                // 兼容所有版本的加载逻辑
+
+                // Version-compatible loading logic
                 if (!world.isChunkLoaded(x, z)) {
-                    world.loadChunk(x, z, true); // 加载区块
+                    world.loadChunk(x, z, true); // Load the chunk
                     Chunk chunk = world.getChunkAt(x, z);
                     if (chunk != null) {
-                        chunk.setForceLoaded(true); // 标记强制加载
+                        chunk.setForceLoaded(true); // Mark as force-loaded
                     }
                 } else {
                     Chunk chunk = world.getChunkAt(x, z);
                     chunk.setForceLoaded(true);
                 }
-                
-                // 记录到强制加载列表
+
+                // Record in the force-loaded list
                 forcedLoadedChunks.computeIfAbsent(worldName, k -> new HashSet<>()).add(chunkKey);
             }
         }
-        
-        // 4. 单独处理需要移除的区块（与遍历新集合分离）
+
+        // 4. Separately remove chunks that are no longer needed (iterated outside the new-set loop)
         for (Map.Entry<String, Set<Long>> entry : oldChunks.entrySet()) {
             String worldName = entry.getKey();
             World world = Bukkit.getWorld(worldName);
             if (world == null) continue;
-            
+
             Set<Long> oldChunkKeys = entry.getValue();
-            // 过滤出不在新集合中的区块（需要移除）
+            // Find chunks not present in the new set (to be released)
             for (long chunkKey : oldChunkKeys) {
                 Set<Long> newChunkKeys = newChunks.getOrDefault(worldName, Collections.emptySet());
                 if (!newChunkKeys.contains(chunkKey)) {
-                    // 解除强制加载
+                    // Release force-loaded flag
                     int x = (int) (chunkKey >> 32);
                     int z = (int) (chunkKey & 0xFFFFFFFFL);
                     Chunk chunk = world.getChunkAt(x, z);
                     if (chunk != null) {
                         chunk.setForceLoaded(false);
                     }
-                    // 从强制加载列表中移除
+                    // Remove from force-loaded list
                     forcedLoadedChunks.getOrDefault(worldName, new HashSet<>()).remove(chunkKey);
                 }
             }
         }
-        
-        // 清理空的世界条目
+
+        // Remove empty world entries
         forcedLoadedChunks.entrySet().removeIf(e -> e.getValue().isEmpty());
-        
+
         if (plugin.getConfig().getBoolean("Debug", false)) {
-            plugin.getLogger().info("已更新强制加载区块：共 " + forcedLoadedChunks.size() + " 个世界，" +
-                    forcedLoadedChunks.values().stream().mapToInt(Set::size).sum() + " 个区块");
+            plugin.getLogger().info("Force-loaded chunks updated: " + forcedLoadedChunks.size() + " world(s), " +
+                    forcedLoadedChunks.values().stream().mapToInt(Set::size).sum() + " chunk(s)");
         }
     }
-    
-    /**
-     * 获取当前强制加载的区块数量
-     */
+
+    /** Returns the total number of currently force-loaded chunks. */
     public int getLoadedChunkCount() {
         return forcedLoadedChunks.values().stream().mapToInt(Set::size).sum();
     }
-    
-    /**
-     * 获取当前加载的世界数量
-     */
+
+    /** Returns the number of worlds with force-loaded chunks. */
     public int getLoadedWorldCount() {
         return forcedLoadedChunks.size();
     }
-    
-    /**
-     * 检查任务是否正在运行
-     */
+
+    /** Checks whether the task is currently running. */
     public boolean isTaskRunning() {
         return isTaskRunning;
     }

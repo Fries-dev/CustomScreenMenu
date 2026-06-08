@@ -6,15 +6,15 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
- * NPC模块入口类
- * 提供统一的模块初始化和管理接口
- * 
- * 集成说明：
- * 1. 在插件 onEnable() 中调用 NPCModule.initialize(plugin)
- * 2. 在插件 onDisable() 中调用 NPCModule.shutdown()
- * 3. 在菜单打开时调用 NPCModule.onMenuOpen(player, location)
- * 4. 在菜单关闭时调用 NPCModule.onMenuClose(player)
- * 5. 在配置重载时调用 NPCModule.reload()
+ * NPC module entry point.
+ * Provides a unified interface for module initialization and management.
+ *
+ * Integration guide:
+ * 1. Call NPCModule.initialize(plugin) in the plugin's onEnable().
+ * 2. Call NPCModule.shutdown() in the plugin's onDisable().
+ * 3. Call NPCModule.onMenuOpen(player, location) when a menu opens.
+ * 4. Call NPCModule.onMenuClose(player) when a menu closes.
+ * 5. Call NPCModule.reload() when configuration is reloaded.
  */
 public class NPCModule {
 
@@ -32,12 +32,11 @@ public class NPCModule {
     }
 
     /**
-     * 初始化NPC模块
-     * 应在插件 onEnable() 中调用
+     * Initializes the NPC module. Should be called in the plugin's onEnable().
      */
     public static synchronized void initialize(JavaPlugin plugin) {
         if (instance != null) {
-            plugin.getLogger().warning("[NPCModule] 模块已经初始化，跳过重复初始化");
+            plugin.getLogger().warning("[NPCModule] Module already initialized, skipping duplicate initialization");
             return;
         }
 
@@ -45,98 +44,72 @@ public class NPCModule {
         instance.mirrorHook.initialize();
 
         if (instance.enabled) {
-            plugin.getLogger().info("[NPCModule] NPC镜像模块已启用");
+            plugin.getLogger().info("[NPCModule] NPC mirror module enabled");
         } else {
-            plugin.getLogger().info("[NPCModule] NPC镜像模块未启用（缺少 FancyNpcs 插件或配置已禁用）");
+            plugin.getLogger().info("[NPCModule] NPC mirror module not enabled (FancyNpcs plugin missing or disabled in config)");
         }
     }
 
     /**
-     * 关闭NPC模块
-     * 应在插件 onDisable() 中调用
+     * Shuts down the NPC module. Should be called in the plugin's onDisable().
      */
     public static synchronized void shutdown() {
-        if (instance == null) {
-            return;
-        }
-
+        if (instance == null) return;
         instance.mirrorHook.cleanup();
         instance.mirrorManager.cleanup();
         instance = null;
     }
 
-    /**
-     * 获取模块实例
-     */
-    public static NPCModule getInstance() {
-        return instance;
-    }
+    /** Returns the module instance. */
+    public static NPCModule getInstance() { return instance; }
 
-    /**
-     * 检查模块是否启用
-     */
+    /** Checks whether the module is enabled. */
     public static boolean isModuleEnabled() {
         return instance != null && instance.enabled;
     }
 
-    /**
-     * 当菜单打开时调用
-     */
+    /** Called when a menu opens. */
     public static void onMenuOpen(Player player, Location menuLocation, float yaw, float pitch, String menuKey) {
         if (instance != null && instance.enabled) {
             instance.mirrorHook.onMenuOpen(player, menuLocation, yaw, pitch, menuKey);
         }
     }
 
-    /**
-     * 当菜单打开时调用（不带菜单键）
-     */
+    /** Called when a menu opens (without menu key). */
     public static void onMenuOpen(Player player, Location menuLocation, float yaw, float pitch) {
         onMenuOpen(player, menuLocation, yaw, pitch, null);
     }
 
-    /**
-     * 当菜单打开时调用（使用默认朝向）
-     */
+    /** Called when a menu opens (using default facing). */
     public static void onMenuOpen(Player player, Location menuLocation) {
         onMenuOpen(player, menuLocation, menuLocation.getYaw(), menuLocation.getPitch(), null);
     }
 
-    /**
-     * 当菜单打开时调用（使用默认朝向，带菜单键）
-     */
+    /** Called when a menu opens (using default facing, with menu key). */
     public static void onMenuOpen(Player player, Location menuLocation, String menuKey) {
         onMenuOpen(player, menuLocation, menuLocation.getYaw(), menuLocation.getPitch(), menuKey);
     }
 
-    /**
-     * 当菜单关闭时调用
-     */
+    /** Called when a menu closes. */
     public static void onMenuClose(Player player) {
         if (instance != null) {
             instance.mirrorHook.onMenuClose(player);
         }
     }
 
-    /**
-     * 当菜单切换时调用
-     */
+    /** Called when a menu switches. */
     public static void onMenuSwitch(Player player, Location newLocation, float yaw, float pitch, String menuKey) {
         if (instance != null && instance.enabled) {
             instance.mirrorHook.onMenuSwitch(player, newLocation, yaw, pitch, menuKey);
         }
     }
 
-    /**
-     * 当菜单切换时调用（不带菜单键）
-     */
+    /** Called when a menu switches (without menu key). */
     public static void onMenuSwitch(Player player, Location newLocation, float yaw, float pitch) {
         onMenuSwitch(player, newLocation, yaw, pitch, null);
     }
 
-    /**
-     * 重载模块配置
-     */
+    /** Reloads the module configuration. */
     public static void reload() {
         if (instance != null) {
             instance.mirrorHook.reload();
@@ -144,24 +117,12 @@ public class NPCModule {
         }
     }
 
-    /**
-     * 获取镜像管理器
-     */
-    public NPCMirrorManager getMirrorManager() {
-        return mirrorManager;
-    }
+    /** Returns the mirror manager. */
+    public NPCMirrorManager getMirrorManager() { return mirrorManager; }
 
-    /**
-     * 获取镜像钩子
-     */
-    public NPCMirrorHook getMirrorHook() {
-        return mirrorHook;
-    }
+    /** Returns the mirror hook. */
+    public NPCMirrorHook getMirrorHook() { return mirrorHook; }
 
-    /**
-     * 检查是否启用
-     */
-    public boolean isEnabled() {
-        return enabled;
-    }
+    /** Checks whether the module is enabled. */
+    public boolean isEnabled() { return enabled; }
 }

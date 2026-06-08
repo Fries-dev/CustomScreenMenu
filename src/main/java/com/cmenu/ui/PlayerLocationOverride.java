@@ -11,20 +11,21 @@ public final class PlayerLocationOverride {
     private PlayerLocationOverride() {}
 
     /**
-     * 动态读取 config.yml 里的 use-player-location
-     * 由 CursorMenuPlugin.loadConfig() 每 reload 一次就调用一次
+     * Dynamically reads use-player-location from config.yml.
+     * Called once per reload by CursorMenuPlugin.loadConfig().
      */
     public static void reload(boolean cfgValue) {
         enabled = cfgValue;
     }
 
     /**
-     * 如果需要覆盖，就把 section 的相机坐标替换为玩家当前位置+朝向
-     * 返回 true 代表已覆盖；false 代表保持原值
+     * If an override is needed, replaces the section's camera coordinates
+     * with the player's current position and orientation.
+     * Returns true if overridden; false if the original values are kept.
      */
     public static boolean apply(Player player, Section section) {
         if (!enabled) {
-            return false;           // 保持原设定
+            return false;           // Keep original settings
         }
         Location loc = player.getLocation();
         section.world      = loc.getWorld().getName();

@@ -39,13 +39,13 @@ public class Commands implements CommandExecutor, TabExecutor {
         switch (args.length) {
 
             case 0:
-                sender.sendMessage(plugin.getLangMessage("command.unknown_argument", "&c[CursorMenu] 未知参数"));
+                sender.sendMessage(plugin.getLangMessage("command.unknown_argument", "&c[CursorMenu] Unknown argument"));
                 return true;
 
             case 1:
                 switch (args[0].toLowerCase()) {
                     case "run":
-                        sender.sendMessage(plugin.getLangMessage("command.input_menu_hint", "&c[CursorMenu] 输入对应的菜单选项"));
+                        sender.sendMessage(plugin.getLangMessage("command.input_menu_hint", "&c[CursorMenu] Enter the menu option"));
                         return true;
 
                     case "stop":
@@ -53,20 +53,20 @@ public class Commands implements CommandExecutor, TabExecutor {
                             if (sender.hasPermission("cursormenu.stop")) {
                                 plugin.stopCursor((Player) sender,true);
                             } else {
-                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                                 return true;
                             }
                         } else {
-                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] 仅玩家可用"));
+                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] Players only"));
                         }
                         return true;
 
                     case "reload":
                         if (sender.hasPermission("cursormenu.reload")) {
                             plugin.reloadPluginConfig();
-                            sender.sendMessage(plugin.getLangMessage("command.reload", "&a[CursorMenu] 插件重载..."));
+                            sender.sendMessage(plugin.getLangMessage("command.reload", "&a[CursorMenu] Plugin reloaded..."));
                         } else {
-                            sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                            sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                         }
                         return true;
 
@@ -74,19 +74,19 @@ public class Commands implements CommandExecutor, TabExecutor {
                         if(sender instanceof Player) {
                             if (sender.hasPermission("cursormenu.itemsstop")) {
                                 itemDisplayManager.hideItem((Player) sender);
-                                sender.sendMessage(plugin.getLangMessage("command.item_disabled", "&a[CursorMenu] 已关闭物品显示"));
+                                sender.sendMessage(plugin.getLangMessage("command.item_disabled", "&a[CursorMenu] Item display disabled"));
                             } else {
-                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                             }
                         } else {
-                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] 仅玩家可用"));
+                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] Players only"));
                         }
                         return true;
 
                     case "register_confirm":
                         if (sender instanceof Player) {
                             if (!sender.hasPermission("cursormenu.register_confirm")) {
-                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                                 return true;
                             }
                             Player player = (Player) sender;
@@ -123,34 +123,34 @@ public class Commands implements CommandExecutor, TabExecutor {
                             }
                             
                             if (confirmPassword == null || confirmPassword.isEmpty()) {
-                                sendActionBarMessage(player, plugin.getLangMessage("register.empty_confirm_password", "&c[CursorMenu] 确认密码不能为空"));
+                                sendActionBarMessage(player, plugin.getLangMessage("register.empty_confirm_password", "&c[CursorMenu] Confirm password cannot be empty"));
                                 plugin.setupCursor(player, "login_menu");
                                 return true;
                             }
 
                             // 检查用户是否已存在
                             if (plugin.getUserDataManager().isUserRegistered(username)) {
-                                sendActionBarMessage(player, plugin.getLangMessage("register.user_exists", "&c[CursorMenu] 该账户已注册"));
+                                sendActionBarMessage(player, plugin.getLangMessage("register.user_exists", "&c[CursorMenu] This account is already registered"));
                                 plugin.setupCursor(player, "login");
                                 return true;
                             }
 
                             if (!password.equals(confirmPassword)) {
-                                sendActionBarMessage(player, plugin.getLangMessage("register.password_mismatch", "&c[CursorMenu] 两次输入的密码不一致"));
+                                sendActionBarMessage(player, plugin.getLangMessage("register.password_mismatch", "&c[CursorMenu] Passwords do not match"));
                                 plugin.setupCursor(player, "login_menu");
                                 return true;
                             }
 
                             // 检查密码长度
                             if (password.length() < 6 || password.length() > 12) {
-                                sendActionBarMessage(player, plugin.getLangMessage("register.invalid_password_length", "&c[CursorMenu] 密码长度必须在6-12位之间"));
+                                sendActionBarMessage(player, plugin.getLangMessage("register.invalid_password_length", "&c[CursorMenu] Password length must be between 6 and 12 characters"));
                                 plugin.setupCursor(player, "login_menu");
                                 return true;
                             }
 
                             // 检查密码强度
                             if (isWeakPassword(password)) {
-                                sendActionBarMessage(player, plugin.getLangMessage("register.weak_password", "&c[CursorMenu] 密码过于简单，请使用更复杂的密码"));
+                                sendActionBarMessage(player, plugin.getLangMessage("register.weak_password", "&c[CursorMenu] Password is too weak, please use a stronger password"));
                                 plugin.setupCursor(player, "login_menu");
                                 return true;
                             }
@@ -158,7 +158,7 @@ public class Commands implements CommandExecutor, TabExecutor {
                             // 注册用户
                             UserDataManager.RegistrationResult result = plugin.getUserDataManager().registerUser(player, password);
                             if (result.isSuccess()) {
-                                sendActionBarMessage(player, plugin.getLangMessage("register.success", "&a[CursorMenu] 用户 %player_name% 注册成功!")
+                                sendActionBarMessage(player, plugin.getLangMessage("register.success", "&a[CursorMenu] User %player_name% registered successfully!")
                                         .replace("%player_name%", player.getName()));
                                 
                                 // 设置玩家为已登录状态
@@ -178,14 +178,14 @@ public class Commands implements CommandExecutor, TabExecutor {
                                 plugin.setupCursor(player, "login_menu");
                             }
                         } else {
-                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] 仅玩家可用"));
+                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] Players only"));
                         }
                         return true;
 
                     case "close":
                         if (sender instanceof Player) {
                             if (!sender.hasPermission("cursormenu.close")) {
-                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                                 return true;
                             }
                             Player player = (Player) sender;
@@ -196,14 +196,14 @@ public class Commands implements CommandExecutor, TabExecutor {
                             plugin.setPlayerInputData(player, "confirm_password", null);
                             plugin.stopCursor(player, true);
                         } else {
-                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] 仅玩家可用"));
+                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] Players only"));
                         }
                         return true;
 
                     case "check_registered":
                         if (sender instanceof Player) {
                             if (!sender.hasPermission("cursormenu.check_registered")) {
-                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                                 return true;
                             }
                             Player player = (Player) sender;
@@ -214,19 +214,19 @@ public class Commands implements CommandExecutor, TabExecutor {
                             // 检查用户是否已注册
                             if (plugin.getUserDataManager().isUserRegistered(username)) {
                                 // 如果已注册，跳转到登录菜单
-                                sendActionBarMessage(player, plugin.getLangMessage("register.user_exists", "&c[CursorMenu] 该账户已注册"));
+                                sendActionBarMessage(player, plugin.getLangMessage("register.user_exists", "&c[CursorMenu] This account is already registered"));
                                 plugin.setupCursor(player, "login");
                                 return true;
                             }
                         } else {
-                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] 仅玩家可用"));
+                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] Players only"));
                         }
                         return true;
 
                     case "check_and_register":
                         if (sender instanceof Player) {
                             if (!sender.hasPermission("cursormenu.check_and_register")) {
-                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                                 return true;
                             }
                             Player player = (Player) sender;
@@ -260,33 +260,33 @@ public class Commands implements CommandExecutor, TabExecutor {
 
                             // 检查两次输入的密码是否一致
                             if (!password.equals(confirmPassword)) {
-                                sendActionBarMessage(player, plugin.getLangMessage("register.password_mismatch", "&c[CursorMenu] 两次输入的密码不一致"));
+                                sendActionBarMessage(player, plugin.getLangMessage("register.password_mismatch", "&c[CursorMenu] Passwords do not match"));
                                 return true;
                             }
 
                             // 检查密码长度
                             if (password.length() < 6 || password.length() > 12) {
-                                sendActionBarMessage(player, plugin.getLangMessage("register.invalid_password_length", "&c[CursorMenu] 密码长度必须在6-12位之间"));
+                                sendActionBarMessage(player, plugin.getLangMessage("register.invalid_password_length", "&c[CursorMenu] Password length must be between 6 and 12 characters"));
                                 return true;
                             }
 
                             // 检查密码强度
                             if (isWeakPassword(password)) {
-                                sendActionBarMessage(player, plugin.getLangMessage("register.weak_password", "&c[CursorMenu] 密码过于简单，请使用更复杂的密码"));
+                                sendActionBarMessage(player, plugin.getLangMessage("register.weak_password", "&c[CursorMenu] Password is too weak, please use a stronger password"));
                                 return true;
                             }
 
                             // 如果所有验证通过，则执行注册命令
                             Bukkit.dispatchCommand(player, "cursormenu register_confirm");
                         } else {
-                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] 仅玩家可用"));
+                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] Players only"));
                         }
                         return true;
 
                     case "check_password_before_login":
                         if (sender instanceof Player) {
                             if (!sender.hasPermission("cursormenu.check_password_before_login")) {
-                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                                 return true;
                             }
                             Player player = (Player) sender;
@@ -322,7 +322,7 @@ public class Commands implements CommandExecutor, TabExecutor {
                             // 验证用户凭据
                             UserDataManager.AuthenticationResult authResult = plugin.getUserDataManager().authenticateUser(player, password);
                             if (authResult.isSuccess()) {
-                                sendActionBarMessage(player, plugin.getLangMessage("login.success", "&a[CursorMenu] 登录成功!"));
+                                sendActionBarMessage(player, plugin.getLangMessage("login.success", "&a[CursorMenu] Login successful!"));
 
                                 // 设置玩家为已登录状态
                                 plugin.setPlayerLoggedIn(player, true);
@@ -340,14 +340,14 @@ public class Commands implements CommandExecutor, TabExecutor {
                                 return true;
                             }
                         } else {
-                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] 仅玩家可用"));
+                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] Players only"));
                         }
                         return true;
 
                     case "login":
                         if (sender instanceof Player) {
                             if (!sender.hasPermission("cursormenu.login")) {
-                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                                 return true;
                             }
                             Player player = (Player) sender;
@@ -383,7 +383,7 @@ public class Commands implements CommandExecutor, TabExecutor {
                             // 验证用户凭据
                             UserDataManager.AuthenticationResult authResult = plugin.getUserDataManager().authenticateUser(player, password);
                             if (authResult.isSuccess()) {
-                                sendActionBarMessage(player, plugin.getLangMessage("login.success", "&a[CursorMenu] 登录成功!"));
+                                sendActionBarMessage(player, plugin.getLangMessage("login.success", "&a[CursorMenu] Login successful!"));
 
                                 // 设置玩家为已登录状态
                                 plugin.setPlayerLoggedIn(player, true);
@@ -401,14 +401,14 @@ public class Commands implements CommandExecutor, TabExecutor {
                                 return true;
                             }
                         } else {
-                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] 仅玩家可用"));
+                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] Players only"));
                         }
                         return true;
 
                     case "toggle_password_visibility":
                         if (sender instanceof Player) {
                             if (!sender.hasPermission("cursormenu.toggle_password_visibility")) {
-                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                                 return true;
                             }
                             Player player = (Player) sender;
@@ -427,7 +427,7 @@ public class Commands implements CommandExecutor, TabExecutor {
                             
                             // 根据新状态使用不同的语言键获取提示信息
                             String languageKey = isVisible ? "password.visibility_shown" : "password.visibility_hidden";
-                            String defaultMessage = isVisible ? "&a[CursorMenu] 密码已显示" : "&a[CursorMenu] 密码已隐藏";
+                            String defaultMessage = isVisible ? "&a[CursorMenu] Password is now visible" : "&a[CursorMenu] Password is now hidden";
                             
                             // 从语言配置中获取自定义消息，使用默认消息作为备选
                             String message = plugin.getLangMessage(languageKey, defaultMessage);
@@ -438,14 +438,14 @@ public class Commands implements CommandExecutor, TabExecutor {
                             player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
                             return true;
                         } else {
-                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] 仅玩家可用"));
+                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] Players only"));
                         }
                         return true;
 
                     case "set_input_field":
                         if (sender instanceof Player) {
                             if (!sender.hasPermission("cursormenu.set_input_field")) {
-                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                                 return true;
                             }
                             Player player = (Player) sender;
@@ -454,13 +454,13 @@ public class Commands implements CommandExecutor, TabExecutor {
                             if (args.length > 1) {
                                 String field = args[1];
                                 plugin.setCurrentPlayerInputField(player, field);
-                                sendActionBarMessage(player, plugin.getLangMessage("input.field_set", "&a[CursorMenu] 当前输入字段已设置为: %field%").replace("%field%", field));
+                                sendActionBarMessage(player, plugin.getLangMessage("input.field_set", "&c[CursorMenu] Item ID does not exist: %item_id%").replace("%field%", field));
                             } else {
                                 sendActionBarMessage(player, plugin.getLangMessage("input.incomplete", "&c[CursorMenu] 请先完成所有输入项"));
                             }
                             return true;
                         } else {
-                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] 仅玩家可用"));
+                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] Players only"));
                         }
                         return true;
 
@@ -469,7 +469,7 @@ public class Commands implements CommandExecutor, TabExecutor {
                         return true;
 
                     default:
-                        sender.sendMessage(plugin.getLangMessage("command.unknown_argument", "&c[CursorMenu] 未知参数"));
+                        sender.sendMessage(plugin.getLangMessage("command.unknown_argument", "&c[CursorMenu] Unknown argument"));
                         return true;
                 }
 
@@ -479,27 +479,27 @@ public class Commands implements CommandExecutor, TabExecutor {
                         if (sender.hasPermission("cursormenu.start")) {
                             Section section = sectionManager.get(args[1]);
                             if (section == null) {
-                                sender.sendMessage(plugin.getLangMessage("command.menu_option_not_found", "&c[CursorMenu] 无该菜单选项"));
+                                sender.sendMessage(plugin.getLangMessage("command.menu_option_not_found", "&c[CursorMenu] Menu option not found"));
                                 return true;
                             }
                             if (!section.permission.isEmpty()
                                     && !sender.hasPermission(section.permission)
                                     && !sender.isOp()) {
-                                sender.sendMessage(plugin.getLangMessage("permission.no_permission_menu", "&c[CursorMenu] 你没有权限打开该菜单"));
+                                sender.sendMessage(plugin.getLangMessage("permission.no_permission_menu", "&c[CursorMenu] You do not have permission to open this menu"));
                                 return true;
                             }
                             if(sectionManager.has(args[1])){
                                 if (sender instanceof Player) {
                                     plugin.setupCursor((Player) sender,args[1]);
                                 } else {
-                                    sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] 仅玩家可用"));
+                                    sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] Players only"));
                                 }
                             } else {
-                                sender.sendMessage(plugin.getLangMessage("command.menu_option_not_found", "&c[CursorMenu] 无该菜单选项"));
+                                sender.sendMessage(plugin.getLangMessage("command.menu_option_not_found", "&c[CursorMenu] Menu option not found"));
                             }
                             return true;
                         } else {
-                            sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                            sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                             return true;
                         }
 
@@ -508,20 +508,20 @@ public class Commands implements CommandExecutor, TabExecutor {
                             if (sender.hasPermission("cursormenu.items")) {
                                 String id = args[1];
                                 if (!itemDisplayManager.showItem((Player) sender, id)) {
-                                    sender.sendMessage(plugin.getLangMessage("command.item_not_found", "&c[CursorMenu] 物品ID不存在: %item_id%").replace("%item_id%", id));
+                                    sender.sendMessage(plugin.getLangMessage("command.item_not_found", "&c[CursorMenu] Item ID does not exist: %item_id%").replace("%item_id%", id));
                                 }
                             } else {
-                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                             }
                         } else {
-                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] 仅玩家可用"));
+                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] Players only"));
                         }
                         return true;
 
                     case "set_input_field":
                         if (sender instanceof Player) {
                             if (!sender.hasPermission("cursormenu.set_input_field")) {
-                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                                sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                                 return true;
                             }
                             Player player = (Player) sender;
@@ -529,16 +529,16 @@ public class Commands implements CommandExecutor, TabExecutor {
                             // 设置当前输入字段
                             String field = args[1];
                             plugin.setCurrentPlayerInputField(player, field);
-                            sendActionBarMessage(player, plugin.getLangMessage("input.field_set", "&a[CursorMenu] 当前输入字段已设置为: %field%").replace("%field%", field));
+                            sendActionBarMessage(player, plugin.getLangMessage("input.field_set", "&c[CursorMenu] Item ID does not exist: %item_id%").replace("%field%", field));
                             return true;
                         } else {
-                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] 仅玩家可用"));
+                            sender.sendMessage(plugin.getLangMessage("permission.player_only", "&c[CursorMenu] Players only"));
                         }
                         return true;
 
                     case "deleteuser":
                         if (!sender.hasPermission("cursormenu.deleteuser")) {
-                            sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                            sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                             return true;
                         }
 
@@ -546,7 +546,7 @@ public class Commands implements CommandExecutor, TabExecutor {
 
                         // 检查玩家是否存在于数据库
                         if (!plugin.getDatabaseManager().isUsernameExists(targetPlayerName)) {
-                            sender.sendMessage(plugin.getLangMessage("player.not_registered", "&c[CursorMenu] 玩家 %player% 不存在于注册列表中").replace("%player%", targetPlayerName));
+                            sender.sendMessage(plugin.getLangMessage("player.not_registered", "&c[CursorMenu] Player %player% is not registered").replace("%player%", targetPlayerName));
                             return true;
                         }
 
@@ -554,25 +554,25 @@ public class Commands implements CommandExecutor, TabExecutor {
                         boolean success = plugin.getDatabaseManager().deleteUser(targetPlayerName);
 
                         if (success) {
-                            sender.sendMessage(plugin.getLangMessage("player.delete_success", "&a[CursorMenu] 玩家 %player% 的注册信息已成功删除，该玩家现在可以重新注册").replace("%player%", targetPlayerName));
+                            sender.sendMessage(plugin.getLangMessage("player.delete_success", "&a[CursorMenu] Registration data for %player% has been deleted. The player can now register again.").replace("%player%", targetPlayerName));
 
                             // 如果玩家在线，强制其重新登录并清除其登录状态
                             Player targetPlayer = Bukkit.getPlayerExact(targetPlayerName);
                             if (targetPlayer != null && targetPlayer.isOnline()) {
                                 plugin.setPlayerLoggedIn(targetPlayer, false);
-                                targetPlayer.sendMessage(plugin.getLangMessage("player.delete_notify", "&e[CursorMenu] 您的注册信息已被管理员删除，请重新注册"));
+                                targetPlayer.sendMessage(plugin.getLangMessage("player.delete_notify", "&e[CursorMenu] Your registration data has been deleted by an administrator. Please register again."));
                                 
                                 // 将玩家送回登录菜单
                                 plugin.setupCursor(targetPlayer, "login_menu");
                             }
                         } else {
-                            sender.sendMessage(plugin.getLangMessage("player.delete_failed", "&c[CursorMenu] 删除玩家 %player% 的注册信息失败").replace("%player%", targetPlayerName));
+                            sender.sendMessage(plugin.getLangMessage("player.delete_failed", "&c[CursorMenu] Failed to delete registration data for %player%").replace("%player%", targetPlayerName));
                         }
 
                         return true;
 
                     default:
-                        sender.sendMessage(plugin.getLangMessage("command.unknown_argument", "&c[CursorMenu] 未知参数"));
+                        sender.sendMessage(plugin.getLangMessage("command.unknown_argument", "&c[CursorMenu] Unknown argument"));
                         return true;
                 }
 
@@ -580,7 +580,7 @@ public class Commands implements CommandExecutor, TabExecutor {
                 // 处理用户输入命令: /cursormenu input <field> <value>
                 if (args[0].equalsIgnoreCase("input") && sender instanceof Player) {
                     if (!sender.hasPermission("cursormenu.input")) {
-                        sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                        sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                         return true;
                     }
                     Player player = (Player) sender;
@@ -626,7 +626,7 @@ public class Commands implements CommandExecutor, TabExecutor {
                 // 处理重置密码命令: /cursormenu resetpassword <player> <newpassword>
                 if (args[0].equalsIgnoreCase("resetpassword")) {
                     if (!sender.hasPermission("cursormenu.resetpassword")) {
-                        sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                        sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                         return true;
                     }
 
@@ -642,13 +642,13 @@ public class Commands implements CommandExecutor, TabExecutor {
 
                     // 检查密码长度
                     if (newPassword.length() < 6 || newPassword.length() > 12) {
-                        sender.sendMessage(plugin.getLangMessage("register.invalid_password_length", "&c[CursorMenu] 密码长度必须在6-12位之间"));
+                        sender.sendMessage(plugin.getLangMessage("register.invalid_password_length", "&c[CursorMenu] Password length must be between 6 and 12 characters"));
                         return true;
                     }
 
                     // 检查密码强度
                     if (isWeakPassword(newPassword)) {
-                        sender.sendMessage(plugin.getLangMessage("register.weak_password", "&c[CursorMenu] 密码过于简单，请使用更复杂的密码"));
+                        sender.sendMessage(plugin.getLangMessage("register.weak_password", "&c[CursorMenu] Password is too weak, please use a stronger password"));
                         return true;
                     }
 
@@ -678,23 +678,23 @@ public class Commands implements CommandExecutor, TabExecutor {
                 if (args[0].equalsIgnoreCase("run")) {
                     Section section = sectionManager.get(args[1]);
                     if (section == null) {
-                        sender.sendMessage(plugin.getLangMessage("command.menu_option_not_found", "&c[CursorMenu] 无该菜单选项"));
+                        sender.sendMessage(plugin.getLangMessage("command.menu_option_not_found", "&c[CursorMenu] Menu option not found"));
                         return true;
                     }
                     if (!section.permission.isEmpty()
                             && !sender.hasPermission(section.permission)
                             && !sender.isOp()) {
-                        sender.sendMessage(plugin.getLangMessage("permission.no_permission_menu", "&c[CursorMenu] 你没有权限打开该菜单"));
+                        sender.sendMessage(plugin.getLangMessage("permission.no_permission_menu", "&c[CursorMenu] You do not have permission to open this menu"));
                         return true;
                     }
                     if (!sender.hasPermission("cursormenu.start")) {
-                        sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                        sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                         return true;
                     }
 
                     String menuKey = args[1];
                     if (!sectionManager.has(menuKey)) {
-                        sender.sendMessage(plugin.getLangMessage("command.menu_option_not_found", "&c[CursorMenu] 无该菜单选项"));
+                        sender.sendMessage(plugin.getLangMessage("command.menu_option_not_found", "&c[CursorMenu] Menu option not found"));
                         return true;
                     }
 
@@ -711,7 +711,7 @@ public class Commands implements CommandExecutor, TabExecutor {
 
                 if (args[0].equalsIgnoreCase("text") && args[1].equalsIgnoreCase("open")) {
                     if (!sender.hasPermission("cursormenu.text")) {
-                        sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                        sender.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                         return true;
                     }
 
@@ -737,13 +737,13 @@ public class Commands implements CommandExecutor, TabExecutor {
                     return true;
                 }
 
-                sender.sendMessage(plugin.getLangMessage("command.unknown_argument", "&c[CursorMenu] 未知参数"));
+                sender.sendMessage(plugin.getLangMessage("command.unknown_argument", "&c[CursorMenu] Unknown argument"));
                 return true;
 
 
 
             default:
-                sender.sendMessage(plugin.getLangMessage("command.unknown_argument", "&c[CursorMenu] 未知参数"));
+                sender.sendMessage(plugin.getLangMessage("command.unknown_argument", "&c[CursorMenu] Unknown argument"));
                 return true;
         }
     }
@@ -922,9 +922,9 @@ public class Commands implements CommandExecutor, TabExecutor {
             case "locked_out":
                 return plugin.getLangMessage("login.error.locked_out", "&c[CursorMenu] 账户已被锁定，请稍后重试");
             case "invalid_password":
-                return plugin.getLangMessage("login.error.invalid_password", "&c[CursorMenu] 密码错误");
+                return plugin.getLangMessage("login.error.invalid_password", "&c[CursorMenu] Incorrect password");
             case "user_not_found":
-                return plugin.getLangMessage("login.error.user_not_found", "&c[CursorMenu] 用户不存在");
+                return plugin.getLangMessage("login.error.user_not_found", "&c[CursorMenu] User not found");
             default:
                 return plugin.getLangMessage("login.error", "&c[CursorMenu] 登录失败，请稍后重试");
         }
@@ -952,7 +952,7 @@ public class Commands implements CommandExecutor, TabExecutor {
         switch (subCommand) {
             case "toggle":
                 if (!player.hasPermission("cursormenu.npc.toggle")) {
-                    player.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                    player.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                     return;
                 }
                 boolean newState = npcHook.toggleNPCForPlayer(player);
@@ -961,7 +961,7 @@ public class Commands implements CommandExecutor, TabExecutor {
 
             case "enable":
                 if (!player.hasPermission("cursormenu.npc.toggle")) {
-                    player.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                    player.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                     return;
                 }
                 npcHook.setNPCEnabledForPlayer(player, true);
@@ -970,7 +970,7 @@ public class Commands implements CommandExecutor, TabExecutor {
 
             case "disable":
                 if (!player.hasPermission("cursormenu.npc.toggle")) {
-                    player.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                    player.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                     return;
                 }
                 npcHook.setNPCEnabledForPlayer(player, false);
@@ -979,7 +979,7 @@ public class Commands implements CommandExecutor, TabExecutor {
 
             case "status":
                 if (!player.hasPermission("cursormenu.npc.status")) {
-                    player.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                    player.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                     return;
                 }
                 player.sendMessage(plugin.getLangMessage("npc.status_enabled", "&a[CursorMenu] NPC创建状态: 已启用"));
@@ -987,7 +987,7 @@ public class Commands implements CommandExecutor, TabExecutor {
 
             case "reload":
                 if (!player.hasPermission("cursormenu.npc.reload")) {
-                    player.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                    player.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                     return;
                 }
                 npcHook.reload();
@@ -996,7 +996,7 @@ public class Commands implements CommandExecutor, TabExecutor {
 
             case "rotate":
                 if (!player.hasPermission("cursormenu.npc.rotate")) {
-                    player.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] 你没有权限使用该命令"));
+                    player.sendMessage(plugin.getLangMessage("permission.no_permission", "&c[CursorMenu] You do not have permission to use this command"));
                     return;
                 }
                 if (args.length < 3) {

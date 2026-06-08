@@ -26,7 +26,7 @@ public class TextDisplayManager {
     private final File configFile;
     private FileConfiguration config;
 
-    // 存储所有活动的文字显示
+    // Stores all active text displays
     private final Map<UUID, List<ActiveTextDisplay>> activeDisplays = new ConcurrentHashMap<>();
     private final Map<UUID, List<Integer>> activeTasks = new ConcurrentHashMap<>();
 
@@ -87,7 +87,7 @@ public class TextDisplayManager {
             double spacing = config.getDouble(path + ".animation.spacing", 0);
             String alignment = config.getString(path + ".alignment", "center");
 
-            int duration = config.getInt(path + ".duration", 30) * 20; // 转换为ticks
+            int duration = config.getInt(path + ".duration", 30) * 20; // Convert to ticks
 
             createTextDisplays(
                     player,
@@ -114,7 +114,7 @@ public class TextDisplayManager {
         World world = player.getWorld();
         Location baseLoc = player.getLocation();
 
-        // 计算对齐偏移
+        // Calculate alignment offset
         double yOffset = 0;
         if ("center".equals(alignment)) {
             yOffset = -(contents.size() - 1) * spacing / 2.0;
@@ -140,21 +140,21 @@ public class TextDisplayManager {
             player.showEntity(CursorMenuPlugin.plugin, display);
             display.setInterpolationDuration(2);
 
-            // 设置倾斜
+            // Apply tilt
             Transformation trans = display.getTransformation();
             trans.getScale().set(scale, scale, scale);
             display.setTransformation(trans);
 
             displays.add(new ActiveTextDisplay(display, loc.clone(), i));
 
-            // 应用动画
+            // Apply animation
             applyAnimation(display, animType, animSpeed, spacing, i, tasks);
         }
 
         activeDisplays.put(player.getUniqueId(), displays);
         activeTasks.put(player.getUniqueId(), tasks);
 
-        // 设置自动移除
+        // Schedule automatic removal
         Bukkit.getScheduler().runTaskLater(CursorMenuPlugin.plugin, () -> {
             clearPlayerDisplays(player.getUniqueId());
         }, duration);
@@ -188,8 +188,8 @@ public class TextDisplayManager {
             case "up-down": {
                 new BukkitRunnable() {
                     final Location start = display.getLocation().clone();
-                    final double total = 2.0; // 上移距离
-                    final long totalTicks = (long) (20 * 3 / speed); // 3秒
+                    final double total = 2.0; // Upward travel distance
+                    final long totalTicks = (long) (20 * 3 / speed); // 3 seconds
                     long tick = 0;
 
                     @Override
@@ -219,7 +219,7 @@ public class TextDisplayManager {
             case "left-right": {
                 new BukkitRunnable() {
                     final Location start = display.getLocation().clone();
-                    final double total = 2.0; // 左右距离
+                    final double total = 2.0; // Left-right travel distance
                     final long totalTicks = (long) (20 * 3 / speed);
                     long tick = 0;
 
@@ -248,13 +248,13 @@ public class TextDisplayManager {
     }
 
     public void clearPlayerDisplays(UUID playerId) {
-        // 清除任务
+        // Cancel scheduled tasks
         List<Integer> tasks = activeTasks.remove(playerId);
         if (tasks != null) {
             tasks.forEach(Bukkit.getScheduler()::cancelTask);
         }
 
-        // 清除实体
+        // Remove entities
         List<ActiveTextDisplay> displays = activeDisplays.remove(playerId);
         if (displays != null) {
             displays.forEach(display -> {
@@ -280,6 +280,7 @@ public class TextDisplayManager {
             this.index = index;
         }
     }
+
     public boolean showTextDisplayById(Player player, String textId) {
         if (!config.contains("text-displays." + textId)) {
             return false;

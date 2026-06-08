@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/CustomScreenMenu.iml" filepath="$PROJECT_DIR$/CustomScreenMenu.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/CustomScreenMenu.iml" filepath="$PROJECT_DIR$/.idea/CustomScreenMenu.iml" />
     </modules>
   </component>
 </project>

@@ -43,21 +43,21 @@ public class UserDataManager {
 
     public RegistrationResult registerUser(Player player, String password) {
         String playerIp = getPlayerIp(player);
-        
-        // IP黑名单检查
-        if (CursorMenuPlugin.plugin.isIpBlacklistEnabled() && 
-            CursorMenuPlugin.plugin.isIpInBlacklist(playerIp)) {
-            plugin.getLogger().warning("玩家 " + player.getName() + " (IP: " + playerIp + ") 尝试注册，但IP在黑名单中");
+
+        // IP blacklist check
+        if (CursorMenuPlugin.plugin.isIpBlacklistEnabled() &&
+                CursorMenuPlugin.plugin.isIpInBlacklist(playerIp)) {
+            plugin.getLogger().warning("Player " + player.getName() + " (IP: " + playerIp + ") attempted to register, but the IP is blacklisted");
             return new RegistrationResult(false, "ip_blacklisted");
         }
-        
-        // IP白名单检查（如果启用白名单且IP不在白名单中，则拒绝注册）
-        if (CursorMenuPlugin.plugin.isIpWhitelistEnabled() && 
-            !CursorMenuPlugin.plugin.isIpInWhitelist(playerIp)) {
-            plugin.getLogger().warning("玩家 " + player.getName() + " (IP: " + playerIp + ") 尝试注册，但IP不在白名单中");
+
+        // IP whitelist check (if whitelist is enabled and the IP is not on it, deny registration)
+        if (CursorMenuPlugin.plugin.isIpWhitelistEnabled() &&
+                !CursorMenuPlugin.plugin.isIpInWhitelist(playerIp)) {
+            plugin.getLogger().warning("Player " + player.getName() + " (IP: " + playerIp + ") attempted to register, but the IP is not on the whitelist");
             return new RegistrationResult(false, "ip_not_in_whitelist");
         }
-        
+
         if (password == null || password.isEmpty()) {
             return new RegistrationResult(false, "empty_password");
         }
@@ -85,7 +85,7 @@ public class UserDataManager {
 
         String hashedPassword = hashPassword(password);
         if (databaseManager.registerUser(player.getName(), hashedPassword, playerIp)) {
-            plugin.getLogger().info("玩家 " + player.getName() + " 已注册，IP: " + playerIp);
+            plugin.getLogger().info("Player " + player.getName() + " has registered, IP: " + playerIp);
             return new RegistrationResult(true, "success");
         }
 
@@ -95,30 +95,30 @@ public class UserDataManager {
     public AuthenticationResult authenticateUser(Player player, String password) {
         UUID playerId = player.getUniqueId();
         String playerIp = getPlayerIp(player);
-        
-        // IP黑名单检查
-        if (CursorMenuPlugin.plugin.isIpBlacklistEnabled() && 
-            CursorMenuPlugin.plugin.isIpInBlacklist(playerIp)) {
-            plugin.getLogger().warning("玩家 " + player.getName() + " (IP: " + playerIp + ") 尝试登录，但IP在黑名单中");
+
+        // IP blacklist check
+        if (CursorMenuPlugin.plugin.isIpBlacklistEnabled() &&
+                CursorMenuPlugin.plugin.isIpInBlacklist(playerIp)) {
+            plugin.getLogger().warning("Player " + player.getName() + " (IP: " + playerIp + ") attempted to log in, but the IP is blacklisted");
             return new AuthenticationResult(false, "ip_blacklisted");
         }
-        
-        // 管理员IP白名单检查（仅对OP玩家生效）
-        // 检查玩家是否真正具有OP权限（不是临时设置的OP）
+
+        // Admin IP whitelist check (only applies to OP players)
+        // Verify the player has genuine OP permissions (not temporarily granted)
         boolean hasRealOpPermission = player.isOp() && (player.hasPermission("bukkit.command.op") || player.hasPermission("*"));
-        if (CursorMenuPlugin.plugin.getAdminIpValidator() != null && hasRealOpPermission && 
-            !CursorMenuPlugin.plugin.getAdminIpValidator().canAdminLogin(player)) {
-            plugin.getLogger().warning("OP玩家 " + player.getName() + " (IP: " + playerIp + ") 尝试登录，但IP不在管理员白名单中");
+        if (CursorMenuPlugin.plugin.getAdminIpValidator() != null && hasRealOpPermission &&
+                !CursorMenuPlugin.plugin.getAdminIpValidator().canAdminLogin(player)) {
+            plugin.getLogger().warning("OP player " + player.getName() + " (IP: " + playerIp + ") attempted to log in, but the IP is not on the admin whitelist");
             return new AuthenticationResult(false, "admin_ip_not_allowed");
         }
-        
-        // IP白名单检查（如果启用白名单且IP不在白名单中，则拒绝登录）
-        if (CursorMenuPlugin.plugin.isIpWhitelistEnabled() && 
-            !CursorMenuPlugin.plugin.isIpInWhitelist(playerIp)) {
-            plugin.getLogger().warning("玩家 " + player.getName() + " (IP: " + playerIp + ") 尝试登录，但IP不在白名单中");
+
+        // IP whitelist check (if whitelist is enabled and the IP is not on it, deny login)
+        if (CursorMenuPlugin.plugin.isIpWhitelistEnabled() &&
+                !CursorMenuPlugin.plugin.isIpInWhitelist(playerIp)) {
+            plugin.getLogger().warning("Player " + player.getName() + " (IP: " + playerIp + ") attempted to log in, but the IP is not on the whitelist");
             return new AuthenticationResult(false, "ip_not_in_whitelist");
         }
-        
+
         if (isLockedOut(playerId)) {
             long remainingTime = (lockedPlayers.get(playerId) - System.currentTimeMillis()) / 1000;
             return new AuthenticationResult(false, "locked_out", remainingTime);
@@ -137,7 +137,7 @@ public class UserDataManager {
         if (storedHash == null) {
             return new AuthenticationResult(false, "user_not_found");
         }
-        
+
         boolean authenticated = verifyPassword(password, storedHash);
 
         if (authenticated) {
@@ -157,7 +157,7 @@ public class UserDataManager {
                     } else {
                         databaseManager.updateLoginInfo(player.getName(), playerIp, true);
                         resetLoginAttempts(playerId);
-                        player.sendMessage(CursorMenuPlugin.plugin.getLangMessage("ip_warning", "&e[警告] 您的IP与注册时不同！"));
+                        player.sendMessage(CursorMenuPlugin.plugin.getLangMessage("ip_warning", "&e[Warning] Your IP differs from the one used at registration!"));
                         return new AuthenticationResult(true, "success_with_ip_warning");
                     }
                 }
@@ -179,12 +179,12 @@ public class UserDataManager {
 
         if (attempts >= MAX_LOGIN_ATTEMPTS) {
             lockedPlayers.put(playerId, System.currentTimeMillis() + LOCKOUT_DURATION);
-            plugin.getLogger().warning("玩家 " + playerId + " 因登录尝试次数过多被锁定 " + (LOCKOUT_DURATION / 1000) + " 秒");
+            plugin.getLogger().warning("Player " + playerId + " has been locked out due to too many login attempts for " + (LOCKOUT_DURATION / 1000) + " seconds");
         }
 
         if (databaseManager != null) {
             databaseManager.updateLoginAttempts(Bukkit.getPlayer(playerId) != null ?
-                Bukkit.getPlayer(playerId).getName() : playerId.toString(), attempts);
+                    Bukkit.getPlayer(playerId).getName() : playerId.toString(), attempts);
         }
     }
 
@@ -194,7 +194,7 @@ public class UserDataManager {
 
         if (databaseManager != null) {
             String playerName = Bukkit.getPlayer(playerId) != null ?
-                Bukkit.getPlayer(playerId).getName() : playerId.toString();
+                    Bukkit.getPlayer(playerId).getName() : playerId.toString();
             databaseManager.updateLoginAttempts(playerName, 0);
         }
     }
@@ -225,14 +225,14 @@ public class UserDataManager {
 
     private String hashPassword(String password) {
         if (password == null) {
-            plugin.getLogger().warning("尝试哈希空密码");
+            plugin.getLogger().warning("Attempted to hash a null password");
             return "";
         }
 
         try {
             return BCrypt.hashpw(password, BCrypt.gensalt(BCRYPT_ROUNDS));
         } catch (Exception e) {
-            plugin.getLogger().severe("无法创建密码哈希: " + e.getMessage());
+            plugin.getLogger().severe("Failed to create password hash: " + e.getMessage());
             return "";
         }
     }
@@ -241,12 +241,12 @@ public class UserDataManager {
         if (password == null || hash == null || hash.isEmpty()) {
             return false;
         }
-        
+
         if (hash.startsWith("$2a$") || hash.startsWith("$2b$") || hash.startsWith("$2y$")) {
             try {
                 return BCrypt.checkpw(password, hash);
             } catch (Exception e) {
-                plugin.getLogger().warning("密码验证失败: " + e.getMessage());
+                plugin.getLogger().warning("Password verification failed: " + e.getMessage());
                 return false;
             }
         } else {
@@ -264,7 +264,7 @@ public class UserDataManager {
             }
             return sb.toString().equals(hash);
         } catch (java.security.NoSuchAlgorithmException e) {
-            plugin.getLogger().severe("无法验证旧密码格式: " + e.getMessage());
+            plugin.getLogger().severe("Failed to verify legacy password format: " + e.getMessage());
             return false;
         }
     }
@@ -272,8 +272,8 @@ public class UserDataManager {
     private boolean isValidPassword(String password) {
         if (password == null || password.length() < 6) return false;
 
-        // 使用正则表达式检查密码是否只包含数字和英文大小写字母
-        // ^[a-zA-Z0-9]+$ 表示字符串必须由一个或多个字母或数字组成
+        // Use a regex to check that the password contains only digits and uppercase/lowercase letters.
+        // ^[a-zA-Z0-9]+$ means the string must consist of one or more alphanumeric characters.
         return password.matches("^[a-zA-Z0-9]+$");
     }
 

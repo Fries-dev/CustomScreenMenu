@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * WASD导航系统配置类
+ * WASD navigation system configuration class.
  */
 public class WASDConfig {
 
@@ -23,20 +23,20 @@ public class WASDConfig {
 
     private boolean enabled = true;
     private boolean debugMode = false;
-    
+
     private double horizontalThreshold = 0.5;
     private double dotProductThreshold = 0.5;
     private long selectionCooldown = 500;
-    
+
     private boolean soundEnabled = true;
     private String selectionSound = "minecraft:entity.experience_orb.pickup";
     private float soundVolume = 1.0f;
     private float soundPitch = 1.0f;
-    
+
     private boolean enableForAllMenus = true;
     private List<String> enabledMenus = new ArrayList<>();
     private boolean useWhitelistMode = false;
-    
+
     private Set<String> disabledPlayers = new HashSet<>();
 
     public WASDConfig(JavaPlugin plugin) {
@@ -46,81 +46,81 @@ public class WASDConfig {
 
     public void load() {
         configFile = new File(plugin.getDataFolder(), "wasd_config.yml");
-        
+
         if (!configFile.exists()) {
             createDefaultConfig();
         }
-        
+
         config = YamlConfiguration.loadConfiguration(configFile);
         readConfig();
     }
 
     private void createDefaultConfig() {
         config = new YamlConfiguration();
-        
+
         config.set("enabled", true);
         config.set("debug-mode", false);
-        
+
         config.set("navigation.horizontal-threshold", 0.5);
         config.set("navigation.dot-product-threshold", 0.5);
         config.set("navigation.selection-cooldown", 500);
-        
+
         config.set("sound.enabled", true);
         config.set("sound.selection-sound", "minecraft:entity.experience_orb.pickup");
         config.set("sound.volume", 1.0);
         config.set("sound.pitch", 1.0);
-        
+
         config.set("menu-settings.enable-for-all-menus", true);
         config.set("menu-settings.enabled-menus", new ArrayList<>());
         config.set("menu-settings.use-whitelist-mode", false);
-        
+
         config.set("disabled-players", new ArrayList<>());
-        
+
         List<String> header = new ArrayList<>();
         header.add("===========================================");
-        header.add("WASD导航系统配置文件");
+        header.add("WASD Navigation System Configuration File");
         header.add("CustomScreenMenu WASD Navigation Module");
         header.add("===========================================");
         header.add("");
-        header.add("enabled: 是否启用WASD导航功能");
-        header.add("debug-mode: 调试模式，输出详细日志");
+        header.add("enabled: Whether to enable the WASD navigation feature");
+        header.add("debug-mode: Debug mode, outputs detailed logs");
         header.add("");
-        header.add("navigation: 导航设置");
-        header.add("  horizontal-threshold: 水平方向选择阈值");
-        header.add("  dot-product-threshold: 左右方向点积阈值");
-        header.add("  selection-cooldown: 选择冷却时间(毫秒)");
+        header.add("navigation: Navigation settings");
+        header.add("  horizontal-threshold: Horizontal direction selection threshold");
+        header.add("  dot-product-threshold: Left/right direction dot product threshold");
+        header.add("  selection-cooldown: Selection cooldown time (milliseconds)");
         header.add("");
-        header.add("sound: 音效设置");
-        header.add("  enabled: 是否启用音效");
-        header.add("  selection-sound: 选中音效");
-        header.add("  volume/pitch: 音量和音调");
+        header.add("sound: Sound effect settings");
+        header.add("  enabled: Whether to enable sound effects");
+        header.add("  selection-sound: Selection sound effect");
+        header.add("  volume/pitch: Volume and pitch");
         header.add("");
-        header.add("menu-settings: 菜单关联设置");
-        header.add("  enable-for-all-menus: 是否对所有菜单启用WASD导航");
-        header.add("  enabled-menus: 启用WASD导航的菜单列表");
-        header.add("  use-whitelist-mode: 是否使用白名单模式");
+        header.add("menu-settings: Menu association settings");
+        header.add("  enable-for-all-menus: Whether to enable WASD navigation for all menus");
+        header.add("  enabled-menus: List of menus with WASD navigation enabled");
+        header.add("  use-whitelist-mode: Whether to use whitelist mode");
         config.options().setHeader(header);
-        
+
         save();
     }
 
     private void readConfig() {
         enabled = config.getBoolean("enabled", true);
         debugMode = config.getBoolean("debug-mode", false);
-        
+
         horizontalThreshold = config.getDouble("navigation.horizontal-threshold", 0.5);
         dotProductThreshold = config.getDouble("navigation.dot-product-threshold", 0.5);
         selectionCooldown = config.getLong("navigation.selection-cooldown", 500);
-        
+
         soundEnabled = config.getBoolean("sound.enabled", true);
         selectionSound = config.getString("sound.selection-sound", "minecraft:entity.experience_orb.pickup");
         soundVolume = (float) config.getDouble("sound.volume", 1.0);
         soundPitch = (float) config.getDouble("sound.pitch", 1.0);
-        
+
         enableForAllMenus = config.getBoolean("menu-settings.enable-for-all-menus", true);
         enabledMenus = config.getStringList("menu-settings.enabled-menus");
         useWhitelistMode = config.getBoolean("menu-settings.use-whitelist-mode", false);
-        
+
         disabledPlayers = new HashSet<>(config.getStringList("disabled-players"));
     }
 
@@ -132,42 +132,32 @@ public class WASDConfig {
         try {
             config.save(configFile);
         } catch (IOException e) {
-            plugin.getLogger().severe("[WASDConfig] 无法保存配置文件: " + e.getMessage());
+            plugin.getLogger().severe("[WASDConfig] Failed to save configuration file: " + e.getMessage());
         }
     }
 
     /**
-     * 检查指定菜单是否启用WASD导航
+     * Checks whether WASD navigation is enabled for the specified menu.
      */
     public boolean isMenuEnabled(String menuKey) {
-        if (!enabled) {
-            return false;
-        }
-        
-        if (enableForAllMenus) {
-            if (useWhitelistMode) {
-                return enabledMenus.contains(menuKey);
-            } else {
-                return !enabledMenus.contains(menuKey);
-            }
+        if (!enabled) return false;
+
+        if (useWhitelistMode) {
+            return enabledMenus.contains(menuKey);
         } else {
-            if (useWhitelistMode) {
-                return enabledMenus.contains(menuKey);
-            } else {
-                return !enabledMenus.contains(menuKey);
-            }
+            return !enabledMenus.contains(menuKey);
         }
     }
 
     /**
-     * 检查玩家是否禁用了WASD导航
+     * Checks whether WASD navigation is disabled for the player.
      */
     public boolean isPlayerDisabled(String playerName) {
         return disabledPlayers.contains(playerName.toLowerCase());
     }
 
     /**
-     * 切换玩家的WASD导航状态
+     * Toggles the WASD navigation state for the player.
      */
     public boolean togglePlayer(String playerName) {
         String lowerName = playerName.toLowerCase();

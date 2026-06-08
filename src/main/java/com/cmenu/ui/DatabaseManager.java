@@ -16,17 +16,17 @@ public class DatabaseManager {
 
     private void initializeDatabase() {
         try {
-            // 确保数据文件夹存在
+            // Ensure the data folder exists
             File dataFolder = plugin.getDataFolder();
             if (!dataFolder.exists()) {
                 dataFolder.mkdirs();
             }
 
-            // 连接到SQLite数据库（如果不存在会自动创建）
+            // Connect to the SQLite database (auto-created if it does not exist)
             String url = "jdbc:sqlite:" + new File(plugin.getDataFolder(), "users.db").getAbsolutePath();
             connection = DriverManager.getConnection(url);
 
-            // 创建用户表（增强版，包含IP绑定字段）
+            // Create the users table (enhanced version with IP binding fields)
             try (Statement stmt = connection.createStatement()) {
                 String sql = "CREATE TABLE IF NOT EXISTS users (" +
                         "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -42,7 +42,7 @@ public class DatabaseManager {
                 stmt.execute(sql);
             }
 
-            // 检查是否需要添加新列（旧数据库升级）
+            // Check whether new columns need to be added (legacy database upgrade)
             try (Statement stmt = connection.createStatement()) {
                 ResultSet rs = stmt.executeQuery("PRAGMA table_info(users)");
                 boolean hasRegisterIp = false;
@@ -54,19 +54,19 @@ public class DatabaseManager {
                     if ("last_login_ip".equals(columnName)) hasLastLoginIp = true;
                 }
 
-                // 添加 register_ip 列
+                // Add register_ip column
                 if (!hasRegisterIp) {
                     stmt.execute("ALTER TABLE users ADD COLUMN register_ip TEXT NOT NULL DEFAULT ''");
-                    plugin.getLogger().info("已添加 register_ip 列到用户表");
+                    plugin.getLogger().info("Added register_ip column to users table");
                 }
 
-                // 添加 last_login_ip 列
+                // Add last_login_ip column
                 if (!hasLastLoginIp) {
                     stmt.execute("ALTER TABLE users ADD COLUMN last_login_ip TEXT");
-                    plugin.getLogger().info("已添加 last_login_ip 列到用户表");
+                    plugin.getLogger().info("Added last_login_ip column to users table");
                 }
 
-                // 添加登录尝试次数和最后登录时间列
+                // Add login attempt count and last login time columns
                 try {
                     stmt.execute("ALTER TABLE users ADD COLUMN login_attempts INTEGER DEFAULT 0");
                 } catch (SQLException ignored) {}
@@ -75,19 +75,19 @@ public class DatabaseManager {
                 } catch (SQLException ignored) {}
             }
 
-            plugin.getLogger().info("用户数据库初始化成功（增强版 - IP绑定）");
+            plugin.getLogger().info("User database initialized successfully (enhanced - IP binding)");
         } catch (SQLException e) {
-            plugin.getLogger().severe("初始化数据库时出错: " + e.getMessage());
+            plugin.getLogger().severe("Error initializing database: " + e.getMessage());
         }
     }
 
-    // 获取数据库连接，如果连接已关闭则重新建立连接
+    // Get database connection, re-establishing it if the connection is closed
     private Connection getConnection() throws SQLException {
         if (connection == null || connection.isClosed()) {
-            // 重新建立数据库连接
+            // Re-establish database connection
             String url = "jdbc:sqlite:" + new File(plugin.getDataFolder(), "users.db").getAbsolutePath();
             connection = DriverManager.getConnection(url);
-            plugin.getLogger().info("重新建立数据库连接成功");
+            plugin.getLogger().info("Database connection re-established successfully");
         }
         return connection;
     }
@@ -103,7 +103,7 @@ public class DatabaseManager {
                 return rs.getBoolean("registered");
             }
         } catch (SQLException e) {
-            plugin.getLogger().severe("查询用户注册状态时出错: " + e.getMessage());
+            plugin.getLogger().severe("Error querying user registration status: " + e.getMessage());
         }
 
         return false;
@@ -117,7 +117,7 @@ public class DatabaseManager {
             ResultSet rs = pstmt.executeQuery();
             return rs.next();
         } catch (SQLException e) {
-            plugin.getLogger().severe("检查用户名是否存在时出错: " + e.getMessage());
+            plugin.getLogger().severe("Error checking whether username exists: " + e.getMessage());
         }
 
         return false;
@@ -131,7 +131,7 @@ public class DatabaseManager {
             ResultSet rs = pstmt.executeQuery();
             return rs.next();
         } catch (SQLException e) {
-            plugin.getLogger().severe("检查IP注册状态时出错: " + e.getMessage());
+            plugin.getLogger().severe("Error checking IP registration status: " + e.getMessage());
         }
 
         return false;
@@ -149,7 +149,7 @@ public class DatabaseManager {
             int affectedRows = pstmt.executeUpdate();
             return affectedRows > 0;
         } catch (SQLException e) {
-            plugin.getLogger().severe("注册用户时出错: " + e.getMessage());
+            plugin.getLogger().severe("Error registering user: " + e.getMessage());
             return false;
         }
     }
@@ -168,7 +168,7 @@ public class DatabaseManager {
                 return storedHash.equals(passwordHash);
             }
         } catch (SQLException e) {
-            plugin.getLogger().severe("验证用户时出错: " + e.getMessage());
+            plugin.getLogger().severe("Error authenticating user: " + e.getMessage());
         }
 
         return false;
@@ -187,7 +187,7 @@ public class DatabaseManager {
                 return rs.getString("password_hash");
             }
         } catch (SQLException e) {
-            plugin.getLogger().severe("获取用户密码哈希时出错: " + e.getMessage());
+            plugin.getLogger().severe("Error retrieving user password hash: " + e.getMessage());
         }
 
         return null;
@@ -203,15 +203,15 @@ public class DatabaseManager {
 
             if (rs.next()) {
                 return new UserInfo(
-                    rs.getString("username"),
-                    rs.getString("register_ip"),
-                    rs.getString("last_login_ip"),
-                    rs.getInt("login_attempts"),
-                    rs.getTimestamp("last_login_time")
+                        rs.getString("username"),
+                        rs.getString("register_ip"),
+                        rs.getString("last_login_ip"),
+                        rs.getInt("login_attempts"),
+                        rs.getTimestamp("last_login_time")
                 );
             }
         } catch (SQLException e) {
-            plugin.getLogger().severe("获取用户信息时出错: " + e.getMessage());
+            plugin.getLogger().severe("Error retrieving user info: " + e.getMessage());
         }
 
         return null;
@@ -227,15 +227,15 @@ public class DatabaseManager {
 
             if (rs.next()) {
                 return new UserInfo(
-                    rs.getString("username"),
-                    rs.getString("register_ip"),
-                    rs.getString("last_login_ip"),
-                    rs.getInt("login_attempts"),
-                    rs.getTimestamp("last_login_time")
+                        rs.getString("username"),
+                        rs.getString("register_ip"),
+                        rs.getString("last_login_ip"),
+                        rs.getInt("login_attempts"),
+                        rs.getTimestamp("last_login_time")
                 );
             }
         } catch (SQLException e) {
-            plugin.getLogger().severe("根据IP获取用户信息时出错: " + e.getMessage());
+            plugin.getLogger().severe("Error retrieving user info by IP: " + e.getMessage());
         }
 
         return null;
@@ -251,7 +251,7 @@ public class DatabaseManager {
 
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            plugin.getLogger().severe("更新登录信息时出错: " + e.getMessage());
+            plugin.getLogger().severe("Error updating login info: " + e.getMessage());
             return false;
         }
     }
@@ -265,7 +265,7 @@ public class DatabaseManager {
 
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            plugin.getLogger().severe("更新登录尝试次数时出错: " + e.getMessage());
+            plugin.getLogger().severe("Error updating login attempt count: " + e.getMessage());
             return false;
         }
     }
@@ -282,7 +282,7 @@ public class DatabaseManager {
                 return rs.getInt("login_attempts");
             }
         } catch (SQLException e) {
-            plugin.getLogger().severe("获取登录尝试次数时出错: " + e.getMessage());
+            plugin.getLogger().severe("Error retrieving login attempt count: " + e.getMessage());
         }
 
         return 0;
@@ -298,7 +298,7 @@ public class DatabaseManager {
             int affectedRows = pstmt.executeUpdate();
             return affectedRows > 0;
         } catch (SQLException e) {
-            plugin.getLogger().severe("更新用户密码时出错: " + e.getMessage());
+            plugin.getLogger().severe("Error updating user password: " + e.getMessage());
             return false;
         }
     }
@@ -312,7 +312,7 @@ public class DatabaseManager {
             int affectedRows = pstmt.executeUpdate();
             return affectedRows > 0;
         } catch (SQLException e) {
-            plugin.getLogger().severe("删除用户时出错: " + e.getMessage());
+            plugin.getLogger().severe("Error deleting user: " + e.getMessage());
             return false;
         }
     }
@@ -323,7 +323,7 @@ public class DatabaseManager {
                 connection.close();
             }
         } catch (SQLException e) {
-            plugin.getLogger().severe("关闭数据库连接时出错: " + e.getMessage());
+            plugin.getLogger().severe("Error closing database connection: " + e.getMessage());
         }
     }
 

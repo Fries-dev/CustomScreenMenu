@@ -1,5 +1,4 @@
 package com.cmenu.ui;
-
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerCommon;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
@@ -41,39 +40,30 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 public class CursorMenuPlugin extends JavaPlugin {
     public static boolean creatureSpawnLimitEnabled;
     public static int creatureSpawnLimitRadius;
     private final Map<String, Set<Long>> forcedLoadedChunks = new HashMap<>();
-    // 存储需要持续加载的区块 (世界名 -> 区块坐标集合)
     private final Map<String, Set<Long>> persistentChunks = new HashMap<>();
-    // 区块加载任务的ID，用于取消任务
     private int chunkLoaderTaskId = -1;
     public static List<String> joinRunCommands = new ArrayList<>();
     public static boolean cameraBlockCheckEnabled;
     public static int cameraBlockCheckRadius;
-
     public static float exitYaw;
     public static float exitPitch;
     public static List<String> allowedCommands = new ArrayList<>();
     public static TextDisplayManager textDisplayManager;
     public static double cursorZOffset;
     public static double cursorX;
-
     public static double cursorY;
     public static ItemDisplayManager itemDisplayManager;
-
     public static CursorMenuPlugin plugin;
-    // 将 ProtocolManager 替换为 PacketEvents 相关的字段
-    // private ProtocolManager protocolManager;
     public static Map<Player, ArmorStand> playerCursors = new ConcurrentHashMap<>();
     private final Map<Player, List<TextDisplay>> playerDisplays = new ConcurrentHashMap<>();
     private final Map<Player, ItemDisplay> playerItemDisplays = new ConcurrentHashMap<>();
     private final Map<Player, ItemDisplay> playerPumpkinDisplays = new ConcurrentHashMap<>();
     public static Map<Player, Location> playerLocations = new ConcurrentHashMap<>();
     public static Map<Player, Pig> playerSit = new ConcurrentHashMap<>();
-
     public static Map<Player, Location> cursorExactLocations = new ConcurrentHashMap<>();
     public static Set<String> playingSound = ConcurrentHashMap.newKeySet();
     private boolean debugMode;
@@ -94,71 +84,40 @@ public class CursorMenuPlugin extends JavaPlugin {
     public static int runDelay;
     public static boolean hasPAPI;
     public static boolean usePumpkinOverlay;
-
-    // 添加光标移动范围限制的静态变量
     public static boolean cursorMovementRangeEnabled;
     public static double cursorMovementRangeXMin;
     public static double cursorMovementRangeXMax;
     public static double cursorMovementRangeYMin;
     public static double cursorMovementRangeYMax;
-
-    // 添加光标默认位置的静态变量
     public static boolean cursorDefaultPositionEnabled;
     public static double cursorDefaultPositionX;
     public static double cursorDefaultPositionY;
-
-    // 悬停放大管理器
     private HoverEnlargeManager hoverEnlargeManager;
-
     private Map<Player, String> currentPlayerMenus = new ConcurrentHashMap<>();
     public Map<Player, MenuLayout> selectedLayouts = new ConcurrentHashMap<>();
-
-    // 用户数据管理器
     private UserDataManager userDataManager;
-
-    // 数据库管理器
     private DatabaseManager databaseManager;
-    
-    // 管理员IP验证器
     private AdminIpValidator adminIpValidator;
-
-    // 存储用户当前正在输入的字段
     private Map<UUID, String> currentPlayerInputFields = new ConcurrentHashMap<>();
-
-    // 存储用户已经输入的数据
     private Map<UUID, Map<String, String>> userInputData = new ConcurrentHashMap<>();
-
-    // 存储密码显示状态 (true表示显示明文，false表示显示星号)
     private Map<UUID, Boolean> passwordVisibility = new ConcurrentHashMap<>();
-    
-    // 存储已登录玩家的集合
     private Set<UUID> loggedInPlayers = ConcurrentHashMap.newKeySet();
-    
-    // IP绑定配置
     private static boolean ipBindingEnabled = true;
     private static boolean ipBindingStrict = false;
     private static boolean allowSameIpLogin = true;
     private static int lockoutDuration = 5;
     private static int maxLoginAttempts = 5;
-    
-    // IP白名单配置
     private static boolean ipWhitelistEnabled = false;
     private static List<String> ipWhitelist = new ArrayList<>();
-    
-    // IP黑名单配置
     private static boolean ipBlacklistEnabled = false;
     private static List<String> ipBlacklist = new ArrayList<>();
-    // 按钮访问控制配置
     private List<String> loginRequiredNameTags = new ArrayList<>();
     private List<String> loginRequiredKeyTags = new ArrayList<>();
     private List<String> noDuplicateRegNameTags = new ArrayList<>();
     private List<String> noDuplicateRegKeyTags = new ArrayList<>();
-
-    // 获取玩家是否已登录
     public boolean isPlayerLoggedIn(Player player) {
         return loggedInPlayers.contains(player.getUniqueId());
     }
-
     public void setPlayerLoggedIn(Player player, boolean loggedIn) {
         UUID playerId = player.getUniqueId();
         if (loggedIn) {
@@ -167,234 +126,133 @@ public class CursorMenuPlugin extends JavaPlugin {
             loggedInPlayers.remove(playerId);
         }
     }
-    
-    /**
-     * 检查按钮是否需要登录
-     * @param name 按钮名称
-     * @param key 按钮键名
-     * @return 是否需要登录
-     */
     public boolean requiresLogin(String name, String key) {
-        // 检查名称是否包含需要登录的标识
         for (String tag : loginRequiredNameTags) {
             if (name != null && name.contains(tag)) {
                 return true;
             }
         }
-        
-        // 检查键名是否包含需要登录的标识
         for (String tag : loginRequiredKeyTags) {
             if (key != null && key.contains(tag)) {
                 return true;
             }
         }
-        
         return false;
     }
-    
-    /**
-     * 检查按钮是否需要防止重复注册
-     * @param name 按钮名称
-     * @param key 按钮键名
-     * @return 是否需要防止重复注册
-     */
     public boolean requiresNotRegistered(String name, String key) {
-        // 检查名称是否包含防止重复注册的标识
         for (String tag : noDuplicateRegNameTags) {
             if (name != null && name.contains(tag)) {
                 return true;
             }
         }
-        
-        // 检查键名是否包含防止重复注册的标识
         for (String tag : noDuplicateRegKeyTags) {
             if (key != null && key.contains(tag)) {
                 return true;
             }
         }
-        
+
         return false;
     }
-    
-    // ==================== IP绑定配置方法 ====================
-    
-    /**
-     * 检查IP绑定是否启用
-     */
     public boolean isIpBindingEnabled() {
         return ipBindingEnabled;
     }
-    
-    /**
-     * 检查IP绑定是否为严格模式
-     */
     public boolean isIpBindingStrict() {
         return ipBindingStrict;
     }
-    
-    /**
-     * 检查是否允许同一IP登录
-     */
     public boolean isAllowSameIpLogin() {
         return allowSameIpLogin;
     }
-    
-    /**
-     * 获取锁定时间（分钟）
-     */
     public int getLockoutDuration() {
         return lockoutDuration;
     }
-    
-    /**
-     * 获取最大登录尝试次数
-     */
     public int getMaxLoginAttempts() {
         return maxLoginAttempts;
     }
-    
-    // ==================== IP白名单和黑名单配置方法 ====================
-    
-    /**
-     * 检查IP白名单是否启用
-     */
     public boolean isIpWhitelistEnabled() {
         return ipWhitelistEnabled;
     }
-    
-    /**
-     * 获取IP白名单列表
-     */
     public List<String> getIpWhitelist() {
         return ipWhitelist;
     }
-    
-    /**
-     * 检查IP黑名单是否启用
-     */
     public boolean isIpBlacklistEnabled() {
         return ipBlacklistEnabled;
     }
-    
-    /**
-     * 获取IP黑名单列表
-     */
     public List<String> getIpBlacklist() {
         return ipBlacklist;
     }
-    
-    /**
-     * 检查IP是否在白名单中
-     */
     public boolean isIpInWhitelist(String ip) {
         if (!ipWhitelistEnabled || ipWhitelist.isEmpty()) {
             return false;
         }
         return matchesIpList(ip, ipWhitelist);
     }
-    
-    /**
-     * 检查IP是否在黑名单中
-     */
     public boolean isIpInBlacklist(String ip) {
         if (!ipBlacklistEnabled || ipBlacklist.isEmpty()) {
             return false;
         }
         return matchesIpList(ip, ipBlacklist);
     }
-    
-    /**
-     * 检查IP是否匹配列表中的任何条目（支持CIDR格式）
-     */
     private boolean matchesIpList(String ip, List<String> ipList) {
         if (ip == null || ipList == null) {
             return false;
         }
-        
         for (String pattern : ipList) {
             pattern = pattern.trim();
             if (pattern.isEmpty()) {
                 continue;
             }
-            
-            // 精确匹配
             if (pattern.equals(ip)) {
                 return true;
             }
-            
-            // CIDR格式匹配
             if (pattern.contains("/")) {
                 if (matchesCidr(ip, pattern)) {
                     return true;
                 }
             }
         }
-        
         return false;
     }
-    
-    /**
-     * 检查IP是否匹配CIDR格式
-     */
     private boolean matchesCidr(String ip, String cidr) {
         try {
             String[] parts = cidr.split("/");
             if (parts.length != 2) {
                 return false;
             }
-            
             String networkAddress = parts[0].trim();
             int prefixLength = Integer.parseInt(parts[1].trim());
-            
-            // 转换IP和子网掩码为字节数组
             byte[] ipBytes = ipToBytes(ip);
             byte[] networkBytes = ipToBytes(networkAddress);
-            
             if (ipBytes == null || networkBytes == null || ipBytes.length != networkBytes.length) {
                 return false;
             }
-            
-            // 计算子网掩码
             int totalBits = ipBytes.length * 8;
             if (prefixLength < 0 || prefixLength > totalBits) {
                 return false;
             }
-            
-            // 检查IP是否在子网范围内
             for (int i = 0; i < ipBytes.length; i++) {
                 int ipBit = (ipBytes[i] < 0 ? ipBytes[i] + 256 : ipBytes[i]);
                 int networkBit = (networkBytes[i] < 0 ? networkBytes[i] + 256 : networkBytes[i]);
-                
                 int bitsInByte = Math.min(8, prefixLength - (i * 8));
                 if (bitsInByte <= 0) {
                     break;
                 }
-                
                 int mask = (1 << bitsInByte) - 1;
                 int ipPrefix = ipBit & mask;
                 int networkPrefix = networkBit & mask;
-                
                 if (ipPrefix != networkPrefix) {
                     return false;
                 }
             }
-            
             return true;
         } catch (Exception e) {
             return false;
         }
     }
-    
-    /**
-     * 将IP地址转换为字节数组
-     */
     private byte[] ipToBytes(String ip) {
         if (ip == null || ip.isEmpty()) {
             return null;
         }
-        
         try {
-            // IPv4
             if (ip.contains(".") && !ip.contains(":")) {
                 String[] octets = ip.split("\\.");
                 if (octets.length != 4) {
@@ -410,188 +268,124 @@ public class CursorMenuPlugin extends JavaPlugin {
                 }
                 return bytes;
             }
-            // IPv6
             else if (ip.contains(":") || ip.contains("::")) {
-                return null; // IPv6支持可根据需要添加
+                return null;
             }
         } catch (NumberFormatException e) {
             return null;
         }
-        
         return null;
     }
-
     public String getCurrentPlayerMenu(Player player) {
         return currentPlayerMenus.get(player);
     }
-
     public MenuLayout getSelectedLayout(Player player) {
         return selectedLayouts.get(player);
     }
-
     public ItemDisplayManager getItemDisplayManager() {
         return itemDisplayManager;
     }
-
     public UserDataManager getUserDataManager() {
         return userDataManager;
     }
-
     public DatabaseManager getDatabaseManager() {
         return databaseManager;
     }
-
     public AdminIpValidator getAdminIpValidator() {
         return adminIpValidator;
     }
-
-    // 获取玩家当前正在输入的字段
     public String getCurrentPlayerInputField(Player player) {
         return currentPlayerInputFields.get(player.getUniqueId());
     }
-
-    // 设置玩家当前正在输入的字段
     public void setCurrentPlayerInputField(Player player, String field) {
         currentPlayerInputFields.put(player.getUniqueId(), field);
     }
-
-    // 获取玩家已输入的数据
     public Map<String, String> getPlayerInputData(Player player) {
         UUID playerId = player.getUniqueId();
         return userInputData.computeIfAbsent(playerId, k -> new HashMap<>());
     }
-
-    // 设置玩家输入的数据
     public void setPlayerInputData(Player player, String field, String value) {
         UUID playerId = player.getUniqueId();
         userInputData.computeIfAbsent(playerId, k -> new HashMap<>()).put(field, value);
     }
-
-    // 获取密码显示状态
     public boolean getPasswordVisibility(Player player) {
-        return passwordVisibility.getOrDefault(player.getUniqueId(), false); // 默认显示明文
+        return passwordVisibility.getOrDefault(player.getUniqueId(), false); // Default: show plaintext
     }
-
-    // 切换密码显示状态
     public void togglePasswordVisibility(Player player) {
         UUID playerId = player.getUniqueId();
         boolean currentVisibility = passwordVisibility.getOrDefault(playerId, false);
         passwordVisibility.put(playerId, !currentVisibility);
     }
-
     private void purgeAllEntities() {
-        // 1. 光标 & 摄像机
         playerCursors.values().forEach(e -> { if (e != null && !e.isDead()) e.remove(); });
         playerSit.values().forEach(e -> { if (e != null && !e.isDead()) e.remove(); });
-
-        // 2. 文字显示
         playerDisplays.values().forEach(list -> list.forEach(e -> { if (e != null && !e.isDead()) e.remove(); }));
-
-        // 3. 物品显示
         playerItemDisplays.values().forEach(e -> { if (e != null && !e.isDead()) e.remove(); });
-
-        // 4. 物品管理器
         if (itemDisplayManager != null) Bukkit.getOnlinePlayers().forEach(itemDisplayManager::hideItem);
-
-        // 5. 文字管理器
         if (textDisplayManager != null) textDisplayManager.cleanup();
-
-        // 6. 悬停放大管理器
         if (hoverEnlargeManager != null) hoverEnlargeManager.cleanup();
-
-        // 7. 数据库连接
         if (databaseManager != null) databaseManager.closeConnection();
     }
-
-
-    // ===================== 配置合并工具 =====================
     private void mergeYamlFile(String fileName) {
         File file = new File(getDataFolder(), fileName);
         if (!file.exists()) {
             saveResource(fileName, false);
             return;
         }
-
-        // 先尝试加载默认配置
         YamlConfiguration defaultConfig;
         try {
             defaultConfig = YamlConfiguration.loadConfiguration(
                     new java.io.InputStreamReader(getResource(fileName), java.nio.charset.StandardCharsets.UTF_8)
             );
         } catch (Exception e) {
-            // 如果无法加载默认配置，则创建一个空的配置
-            getLogger().warning("无法加载默认配置 " + fileName + ": " + e.getMessage());
+            getLogger().warning("Failed to load default configuration " + fileName + ": " + e.getMessage());
             defaultConfig = new YamlConfiguration();
         }
-
         YamlConfiguration userConfig = YamlConfiguration.loadConfiguration(file);
-
         for (String key : defaultConfig.getKeys(true)) {
             if (!userConfig.contains(key)) {
                 userConfig.set(key, defaultConfig.get(key));
             }
         }
-
         if (defaultConfig.contains("version") && !userConfig.getString("version").equals(defaultConfig.getString("version"))) {
             userConfig.set("version", defaultConfig.getString("version"));
         }
-
         try {
             userConfig.save(file);
         } catch (java.io.IOException e) {
-            getLogger().warning("无法保存合并后的 " + fileName + ": " + e.getMessage());
+            getLogger().warning("Failed to save merged " + fileName + ": " + e.getMessage());
         }
     }
-
-    /* ========== 缺失文件自动恢复工具 ========== */
     private void ensureDefaultsOnReload(String... files) {
         for (String name : files) {
             File file = new File(getDataFolder(), name);
             if (!file.exists()) {
                 saveResource(name, false);
-                getLogger().info("[CustomScreenMenu] 检测到缺失文件，已重新生成默认配置: " + name);
+                getLogger().info("[CustomScreenMenu] Missing file detected, regenerated default configuration: " + name);
             }
         }
     }
-
     @Override
     public void onEnable() {
         plugin = this;
         saveDefaultConfig();
-
         mergeYamlFile("config.yml");
-
-        // 初始化 PacketEvents API
         PacketEvents.getAPI().getSettings()
                 .reEncodeByDefault(false)
                 .checkForUpdates(false)
                 .bStats(true);
         PacketEvents.getAPI().load();
-
-        // 注册BungeeCord/Velocity通道
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
-
-        // protocolManager = ProtocolLibrary.getProtocolManager();
         foliaLib = new MorePaperLib(this);
-
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             hasPAPI = true;
         }
-
-        // 初始化语言配置
         reloadLangConfig();
-        
         loadConfig();
-
         getServer().getPluginManager().registerEvents(new TeleportListener(this), this);
-
         itemDisplayManager = new ItemDisplayManager(this);
-
-
         registerUseEntityPacketListener();
-
         startChunkLoaderTask();
-
         getServer().getPluginManager().registerEvents(new CreatureSpawnListener(), this);
 
         getServer().getPluginManager().registerEvents(new SessionCleanupListener(), this);
@@ -600,7 +394,7 @@ public class CursorMenuPlugin extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new AttackBreakListener(), this);
 
-        // 注册玩家加入事件监听器
+        // Register player join event listener
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(), this);
 
 
@@ -608,38 +402,38 @@ public class CursorMenuPlugin extends JavaPlugin {
 
         textDisplayManager = new TextDisplayManager(this);
 
-        // 初始化悬停放大管理器
+        // Initialize hover-enlarge manager
         hoverEnlargeManager = new HoverEnlargeManager(this);
 
-        // 初始化数据库管理器
+        // Initialize database manager
         databaseManager = new DatabaseManager(this);
 
-        // 初始化用户数据管理器
+        // Initialize user data manager
         userDataManager = new UserDataManager(this, databaseManager);
-        
-        // 初始化管理员IP验证器
+
+        // Initialize admin IP validator
         adminIpValidator = new AdminIpValidator(this);
 
-        // 初始化NPC镜像模块
+        // Initialize NPC mirror module
         NPCModule.initialize(this);
 
-        // 初始化WASD导航模块
+        // Initialize WASD navigation module
         WASDModule.initialize(this);
 
 
         getLogger().info("====================================");
-        getLogger().info("CustomScreenMenu 插件已启动");
-        getLogger().info("版本: " + getDescription().getVersion());
-        getLogger().info("作者:野比大雄 " + getDescription().getAuthors());
-        getLogger().info("感谢使用本插件！");
+        getLogger().info("CustomScreenMenu plugin started");
+        getLogger().info("Version: " + getDescription().getVersion());
+        getLogger().info("Author: Nobita " + getDescription().getAuthors());
+        getLogger().info("Thank you for using this plugin!");
         getLogger().info("====================================");
 
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             new CursorMenuPlaceholder(this).register();
-            getLogger().info("已注册PlaceholderAPI变量支持");
+            getLogger().info("PlaceholderAPI placeholder support registered");
         }
-        
-        // 确保所有语言文件都被创建
+
+        // Ensure all language files are created
         String[] langFiles = {"lang.yml", "lang/zh_cn.yml", "lang/en_us.yml", "lang/ru_ru.yml"};
         for (String file : langFiles) {
             File targetFile = new File(getDataFolder(), file);
@@ -647,7 +441,7 @@ public class CursorMenuPlugin extends JavaPlugin {
                 saveResource(file, false);
             }
         }
-        
+
         Bukkit.getScheduler().runTaskTimer(this, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 if (!playerCursors.containsKey(player)) continue;
@@ -657,8 +451,8 @@ public class CursorMenuPlugin extends JavaPlugin {
                 float pitch = loc.getPitch();
 
                 updateCursorPosition(player, yaw, pitch);
-                
-                // 更新南瓜头位置
+
+                // Update pumpkin head position
                 ItemDisplay pumpkinDisplay = playerPumpkinDisplays.get(player);
                 if (pumpkinDisplay != null && pumpkinDisplay.isValid()) {
                     Location pumpkinLoc = loc.clone().add(0, 1.7, 0);
@@ -671,43 +465,43 @@ public class CursorMenuPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // 关闭WASD导航模块
+        // Shut down WASD navigation module
         WASDModule.shutdown();
 
-        // 关闭NPC镜像模块
+        // Shut down NPC mirror module
         NPCModule.shutdown();
 
-        // 注销BungeeCord/Velocity通道
+        // Unregister BungeeCord/Velocity channel
         getServer().getMessenger().unregisterOutgoingPluginChannel(this, "BungeeCord");
 
         PacketEvents.getAPI().terminate();
         purgeAllEntities();
 
         getLogger().info("====================================");
-        getLogger().info("CustomScreenMenu 插件已关闭");
-        getLogger().info("版本: " + getDescription().getVersion());
-        getLogger().info("感谢使用，下次再见！");
+        getLogger().info("CustomScreenMenu plugin disabled");
+        getLogger().info("Version: " + getDescription().getVersion());
+        getLogger().info("Thank you for using, see you next time!");
         getLogger().info("====================================");
     }
 
 
-    // 添加语言配置
+    // Language configuration
     private YamlConfiguration langConfig;
-    
-    // 获取语言配置中的消息
+
+    // Get message from language configuration
     public String getLangMessage(String key, String defaultValue) {
         if (langConfig == null) {
             reloadLangConfig();
         }
-        // 确保每次获取消息时都从文件中重新加载配置
+        // Reload config from file each time to ensure freshness
         File langFile = new File(getDataFolder(), "lang.yml");
         if (langFile.exists()) {
             langConfig = YamlConfiguration.loadConfiguration(langFile);
         }
         return ChatColor.translateAlternateColorCodes('&', langConfig.getString(key, defaultValue));
     }
-    
-    // 重新加载语言配置
+
+    // Reload language configuration
     public void reloadLangConfig() {
         File langFile = new File(getDataFolder(), "lang.yml");
         if (!langFile.exists()) {
@@ -718,12 +512,12 @@ public class CursorMenuPlugin extends JavaPlugin {
     }
 
     public void reloadPluginConfig() {
-        // 重载语言配置
+        // Reload language configuration
         reloadLangConfig();
 
-        getLogger().info("正在重载插件配置...");
+        getLogger().info("Reloading plugin configuration...");
 
-        // 重载主配置
+        // Reload main configuration
         reloadConfig();
 
         if (itemDisplayManager != null) {
@@ -772,17 +566,17 @@ public class CursorMenuPlugin extends JavaPlugin {
                     player.teleport(originalLoc);
                 }
 
-                // 清理悬停放大效果
+                // Clean up hover-enlarge effects
                 if (hoverEnlargeManager != null) {
                     hoverEnlargeManager.cleanupPlayer(player);
                 }
 
-                // 清理用户输入数据
+                // Clean up user input data
                 currentPlayerInputFields.remove(player.getUniqueId());
                 userInputData.remove(player.getUniqueId());
                 passwordVisibility.remove(player.getUniqueId());
-                
-                // 恢复阻挡方块
+
+                // Restore blocking blocks
                 stopCursor(player, true);
             }
 
@@ -842,53 +636,53 @@ public class CursorMenuPlugin extends JavaPlugin {
         );
 
         cursorModelData = getConfig().getInt("cursor-item.custom-model-data", 0);
-        getLogger().info("配置已成功重载，所有菜单元素已刷新");
+        getLogger().info("Configuration reloaded successfully, all menu elements refreshed");
         File commandsFile = new File(getDataFolder(), "commands.yml");
         YamlConfiguration commandsConfig = YamlConfiguration.loadConfiguration(commandsFile);
         allowedCommands = commandsConfig.getStringList("allowed-commands");
         allowedCommands.replaceAll(String::toLowerCase);
         updatePersistentChunks();
-        // 重新加载生物生成限制配置
+        // Reload creature spawn limit configuration
         creatureSpawnLimitEnabled = getConfig().getBoolean("creature-spawn-limits.enabled", false);
         creatureSpawnLimitRadius = getConfig().getInt("creature-spawn-limits.radius", 10);
 
-        // 重新初始化悬停放大管理器
+        // Re-initialize hover-enlarge manager
         if (hoverEnlargeManager != null) {
             hoverEnlargeManager.cleanup();
         }
         hoverEnlargeManager = new HoverEnlargeManager(this);
 
-        // 重新初始化数据库管理器
+        // Re-initialize database manager
         if (databaseManager != null) {
             databaseManager.closeConnection();
         }
         databaseManager = new DatabaseManager(this);
 
-        // 重新初始化用户数据管理器
+        // Re-initialize user data manager
         if (userDataManager != null) {
-            // 注意：这里我们需要重新创建userDataManager
+            // Note: userDataManager needs to be re-created here
         }
         userDataManager = new UserDataManager(this, databaseManager);
-        
-        // 重新初始化管理员IP验证器
+
+        // Re-initialize admin IP validator
         if (adminIpValidator != null) {
-            // 重新加载配置
+            // Reload configuration
             adminIpValidator.loadConfig();
         } else {
             adminIpValidator = new AdminIpValidator(this);
         }
 
-        // 重载NPC镜像模块
+        // Reload NPC mirror module
         NPCModule.reload();
 
-        // 重载WASD导航模块
+        // Reload WASD navigation module
         WASDModule.reload();
 
-        // 为所有在线玩家重新创建菜单元素，以应用新的配置
+        // Re-create menu elements for all online players to apply new configuration
         for (Player player : Bukkit.getOnlinePlayers()) {
             String currentMenu = currentPlayerMenus.get(player);
             if (currentMenu != null) {
-                // 为玩家重新创建菜单元素，使用新的配置
+                // Re-create menu elements for player using new configuration
                 setupCursor(player, currentMenu);
             }
         }
@@ -904,12 +698,12 @@ public class CursorMenuPlugin extends JavaPlugin {
             saveDefaultConfig();
         }
 
-        // 加载按钮访问控制配置
+        // Load button access control configuration
         loadButtonAccessControlConfig();
-        
-        // 加载IP绑定配置
+
+        // Load IP binding configuration
         loadIpBindingConfig();
-        
+
         cameraBlockCheckEnabled = getConfig().getBoolean("camera-block-check.enabled", false);
         cameraBlockCheckRadius = getConfig().getInt("camera-block-check.radius", 5);
         cursorZOffset = getConfig().getDouble("cursor-item.z-offset", 0.0);
@@ -929,13 +723,13 @@ public class CursorMenuPlugin extends JavaPlugin {
         cursorModelData = getConfig().getInt("cursor-item.custom-model-data", 0);
         maxX = getConfig().getDouble("cursor-item.max-x");
         maxY = getConfig().getDouble("cursor-item.max-y");
-        // 读取光标移动范围限制配置
+        // Read cursor movement range limit configuration
         cursorMovementRangeEnabled = getConfig().getBoolean("cursor-item.movement-range.enabled", false);
         cursorMovementRangeXMin = getConfig().getDouble("cursor-item.movement-range.x.min", -2.0);
         cursorMovementRangeXMax = getConfig().getDouble("cursor-item.movement-range.x.max", 2.0);
         cursorMovementRangeYMin = getConfig().getDouble("cursor-item.movement-range.y.min", -3.0);
         cursorMovementRangeYMax = getConfig().getDouble("cursor-item.movement-range.y.max", 3.0);
-        // 读取光标默认位置配置
+        // Read cursor default position configuration
         cursorDefaultPositionEnabled = getConfig().getBoolean("cursor-item.default-position.enabled", false);
         cursorDefaultPositionX = getConfig().getDouble("cursor-item.default-position.x", 0.0);
         cursorDefaultPositionY = getConfig().getDouble("cursor-item.default-position.y", 0.0);
@@ -944,13 +738,13 @@ public class CursorMenuPlugin extends JavaPlugin {
         exitYaw = (float) getConfig().getDouble("exit-camera.yaw", 0.0);
         exitPitch = (float) getConfig().getDouble("exit-camera.pitch", 0.0);
 
-        // 加载生物生成限制配置
+        // Load creature spawn limit configuration
         creatureSpawnLimitEnabled = getConfig().getBoolean("creature-spawn-limits.enabled", false);
         creatureSpawnLimitRadius = getConfig().getInt("creature-spawn-limits.radius", 10);
 
         PlayerLocationOverride.reload(getConfig().getBoolean("use-player-location", false));
 
-        saveDefaultMenuFiles();//生成默认菜单配置
+        saveDefaultMenuFiles(); // Generate default menu configuration
         sectionManager.loadAllMenuConfigs();
 
         File commandsFile = new File(getDataFolder(), "commands.yml");
@@ -964,41 +758,39 @@ public class CursorMenuPlugin extends JavaPlugin {
     }
 
     /**
-     * 加载按钮访问控制配置
+     * Load button access control configuration
      */
     private void loadButtonAccessControlConfig() {
-        // 加载需要登录的按钮标识配置
+        // Load login-required button tag configuration
         loginRequiredNameTags = getConfig().getStringList("button-access-control.login-required.name-tags");
         loginRequiredKeyTags = getConfig().getStringList("button-access-control.login-required.key-tags");
-        
-        // 加载防止重复注册的按钮标识配置
+
+        // Load no-duplicate-registration button tag configuration
         noDuplicateRegNameTags = getConfig().getStringList("button-access-control.no-duplicate-registration.name-tags");
         noDuplicateRegKeyTags = getConfig().getStringList("button-access-control.no-duplicate-registration.key-tags");
-        
-        // 如果配置为空，使用默认值
+
+        // If configuration is empty, use default values
         if (loginRequiredNameTags.isEmpty()) {
-            loginRequiredNameTags.add("[需要登录]");
+            loginRequiredNameTags.add("[Login Required]");
             loginRequiredNameTags.add("[LOGIN_REQUIRED]");
         }
-        
+
         if (loginRequiredKeyTags.isEmpty()) {
             loginRequiredKeyTags.add("login_required");
-            loginRequiredKeyTags.add("需要登录");
         }
-        
+
         if (noDuplicateRegNameTags.isEmpty()) {
-            noDuplicateRegNameTags.add("[防止重复注册]");
+            noDuplicateRegNameTags.add("[No Duplicate Registration]");
             noDuplicateRegNameTags.add("[NO_DUPLICATE_REG]");
         }
-        
+
         if (noDuplicateRegKeyTags.isEmpty()) {
             noDuplicateRegKeyTags.add("no_duplicate_reg");
-            noDuplicateRegKeyTags.add("防止重复注册");
         }
     }
 
     /**
-     * 加载IP绑定安全配置
+     * Load IP binding security configuration
      */
     private void loadIpBindingConfig() {
         ipBindingEnabled = getConfig().getBoolean("ip-binding.enabled", true);
@@ -1006,46 +798,46 @@ public class CursorMenuPlugin extends JavaPlugin {
         allowSameIpLogin = getConfig().getBoolean("ip-binding.allow-same-ip-login", true);
         lockoutDuration = getConfig().getInt("ip-binding.lockout-duration", 5);
         maxLoginAttempts = getConfig().getInt("ip-binding.max-login-attempts", 5);
-        
-        // 加载IP白名单配置
+
+        // Load IP whitelist configuration
         ipWhitelistEnabled = getConfig().getBoolean("ip-binding.whitelist.enabled", false);
         ipWhitelist = getConfig().getStringList("ip-binding.whitelist.ips");
-        
-        // 加载IP黑名单配置
+
+        // Load IP blacklist configuration
         ipBlacklistEnabled = getConfig().getBoolean("ip-binding.blacklist.enabled", false);
         ipBlacklist = getConfig().getStringList("ip-binding.blacklist.ips");
-        
-        getLogger().info("IP绑定安全配置已加载 - 启用: " + ipBindingEnabled + ", 严格模式: " + ipBindingStrict);
-        getLogger().info("IP白名单: " + (ipWhitelistEnabled ? "启用" : "禁用") + ", 规则数: " + ipWhitelist.size());
-        getLogger().info("IP黑名单: " + (ipBlacklistEnabled ? "启用" : "禁用") + ", 规则数: " + ipBlacklist.size());
+
+        getLogger().info("IP binding security config loaded - Enabled: " + ipBindingEnabled + ", Strict mode: " + ipBindingStrict);
+        getLogger().info("IP whitelist: " + (ipWhitelistEnabled ? "Enabled" : "Disabled") + ", Rules: " + ipWhitelist.size());
+        getLogger().info("IP blacklist: " + (ipBlacklistEnabled ? "Enabled" : "Disabled") + ", Rules: " + ipBlacklist.size());
     }
 
     public void setupCursor(Player player, String key) {
         if (playerCursors.containsKey(player)) {
-            // 检查是否需要刷新而不是完全重建菜单
+            // Check whether a refresh is needed instead of a full menu rebuild
             String currentMenuKey = currentPlayerMenus.get(player);
             Section currentSection = sectionManager.get(currentMenuKey);
             Section newSection = sectionManager.get(key);
 
-            // 如果两个菜单位于同一世界和坐标，则只刷新内容
-            // 修复：确保菜单键不同时才刷新，或者强制刷新（如密码可见性切换）
+            // If both menus are at the same world/coordinates, only refresh content.
+            // Fix: ensure a refresh happens when menu keys differ, or force-refresh (e.g. password visibility toggle)
             if (currentSection != null && newSection != null &&
                     isSameLocation(currentSection, newSection)) {
                 refreshMenuContent(player, key, currentMenuKey);
                 return;
             }
 
-            // 否则按照原来的逻辑处理
+            // Otherwise follow the original logic
             stopCursor(player, false);
         }
 
         currentPlayerMenus.put(player, key);
         Section section = sectionManager.get(key);
 
-        // 添加 null 检查以防止 NullPointerException
+        // Null check to prevent NullPointerException
         if (section == null) {
             getLogger().warning("Menu '" + key + "' not found! Please check your menu configuration.");
-            player.sendMessage(getLangMessage("command.menu_not_found", "&c[CursorMenu] 菜单 '%menu%' 未找到，请检查配置文件！").replace("%menu%", key));
+            player.sendMessage(getLangMessage("command.menu_not_found", "&c[CursorMenu] Menu '%menu%' not found, please check your configuration file!").replace("%menu%", key));
             return;
         }
 
@@ -1074,7 +866,7 @@ public class CursorMenuPlugin extends JavaPlugin {
             player.setMetadata("cursor_original_gamemode", new FixedMetadataValue(this, player.getGameMode().name()));
             player.setGameMode(GameMode.ADVENTURE);
             world.getChunkAt(targetLoc).load(true);
-        }, 5L); // 延迟5tick
+        }, 5L); // Delay 5 ticks
 
         player.setMetadata("cursor_original_gamemode", new FixedMetadataValue(this, player.getGameMode().name()));
         Bukkit.getScheduler().runTaskLater(this, () -> {
@@ -1103,23 +895,23 @@ public class CursorMenuPlugin extends JavaPlugin {
                 player.playSound(player.getLocation(), soundName, soundVolume, soundPitch);
             }
 
-            /* ========== 生成所有实体 ========== */
+            /* ========== Spawn all entities ========== */
             Location cameraLocation = new Location(world, section.cameraX, section.cameraY, section.cameraZ, section.yaw, section.pitch);
             Vector dir = cameraLocation.getDirection().normalize();
             Vector right = new Vector(-dir.getZ(), 0, dir.getX()).normalize();
             Vector up = dir.getCrossProduct(right).multiply(-1);
 
-            // 计算光标初始位置
+            // Calculate initial cursor position
             double initialScreenX = cursorX;
             double initialScreenY = cursorY;
 
-            // 如果启用了默认位置，则使用默认位置
+            // If default position is enabled, use it
             if (cursorDefaultPositionEnabled) {
                 initialScreenX = cursorDefaultPositionX;
                 initialScreenY = cursorDefaultPositionY;
             }
 
-            // 应用光标移动范围限制到默认位置
+            // Apply cursor movement range limits to the default position
             if (cursorMovementRangeEnabled) {
                 initialScreenX = Math.max(cursorMovementRangeXMin, Math.min(cursorMovementRangeXMax, initialScreenX));
                 initialScreenY = Math.max(cursorMovementRangeYMin, Math.min(cursorMovementRangeYMax, initialScreenY));
@@ -1141,7 +933,7 @@ public class CursorMenuPlugin extends JavaPlugin {
                 Location textLocation = cameraLocation.clone().add(textOffset);
 
                 TextDisplay t = world.spawn(textLocation, TextDisplay.class);
-                // 确保正确处理占位符
+                // Ensure placeholders are correctly processed
                 String parsedName = parsePlaceholders(player, layout.name);
                 t.setText(ColorParser.toLegacyString(parsedName));
                 t.setCustomName(key + ":" + layout.key);
@@ -1159,10 +951,10 @@ public class CursorMenuPlugin extends JavaPlugin {
                 float rollRad = (float) Math.toRadians(layout.tiltZ);
                 Transformation trans = t.getTransformation();
                 trans.getLeftRotation().rotationYXZ(yawRad, pitchRad, rollRad);
-                
-                // 设置文本大小
+
+                // Set text size
                 trans.getScale().set(layout.getTextSize());
-                
+
                 t.setTransformation(trans);
             }
             playerDisplays.put(player, textDisplays);
@@ -1187,27 +979,27 @@ public class CursorMenuPlugin extends JavaPlugin {
             }, null, 2L);
 
             if (debugMode) {
-                player.sendMessage(getLangMessage("menu.cursor_activated", "&a[CursorMenu] 光标菜单已激活!"));
+                player.sendMessage(getLangMessage("menu.cursor_activated", "&a[CursorMenu] Cursor menu activated!"));
             }
             textDisplayManager.showTextDisplays(player, key);
             clearBlockingBlocks(player);
 
-            // 创建NPC镜像
+            // Create NPC mirror
             NPCModule.onMenuOpen(player, cameraLocation, section.yaw, section.pitch, key);
 
-            // 启动WASD导航会话（如果菜单启用）
+            // Start WASD navigation session (if the menu has it enabled)
             if (section.wasdEnabled && WASDModule.isMenuEnabled(key)) {
                 List<Location> textLocations = new ArrayList<>();
                 List<String> commands = new ArrayList<>();
                 List<Double> scales = new ArrayList<>();
-                
+
                 for (MenuLayout layout : section.layouts.values()) {
                     Vector textOffset = dir.clone().multiply(layout.z)
                             .add(right.clone().multiply(layout.x))
                             .add(up.clone().multiply(layout.y));
                     Location textLocation = cameraLocation.clone().add(textOffset);
                     textLocations.add(textLocation);
-                    
+
                     List<String> layoutCommands = layout.getCommands();
                     if (layoutCommands != null && !layoutCommands.isEmpty()) {
                         commands.add(layoutCommands.get(0));
@@ -1216,17 +1008,17 @@ public class CursorMenuPlugin extends JavaPlugin {
                     }
                     scales.add(layout.getTextSize());
                 }
-                
-                WASDModule.onMenuOpen(player, key, 
-                    textLocations.toArray(new Location[0]), 
-                    commands, 
-                    textDisplays.toArray(new TextDisplay[0]), 
-                    scales);
+
+                WASDModule.onMenuOpen(player, key,
+                        textLocations.toArray(new Location[0]),
+                        commands,
+                        textDisplays.toArray(new TextDisplay[0]),
+                        scales);
             }
 
-            // 将初始位置添加到缓存中
+            // Store initial cursor location in cache
             cursorExactLocations.put(player, cursorLocation.clone());
-        }, 10L); // 延迟 10 tick
+        }, 10L); // Delay 10 ticks
 
         if (section.autoCommandsEnabled && !section.autoCommands.isEmpty()) {
             for (int i = 0; i < section.autoCommands.size(); i++) {
@@ -1237,7 +1029,7 @@ public class CursorMenuPlugin extends JavaPlugin {
 
                 String processedCmd = parsePlaceholders(player, cmd);
                 foliaLib.scheduling().entitySpecificScheduler(player).runDelayed(task -> {
-                    // 检查玩家是否仍在菜单中再执行命令
+                    // Verify player is still in the menu before executing command
                     if (!player.isOnline() || !playerCursors.containsKey(player)) return;
 
                     if (processedCmd.toLowerCase().startsWith("[console]")) {
@@ -1248,13 +1040,13 @@ public class CursorMenuPlugin extends JavaPlugin {
                             player.performCommand(finalCmd);
                         } else {
                             try {
-                                // 标记开始临时OP操作
+                                // Mark beginning of temporary OP operation
                                 AdminIpValidator.beginTemporaryOpOperation();
                                 player.setOp(true);
                                 player.performCommand(finalCmd);
                             } finally {
                                 player.setOp(false);
-                                // 标记结束临时OP操作
+                                // Mark end of temporary OP operation
                                 AdminIpValidator.endTemporaryOpOperation();
                             }
                         }
@@ -1306,59 +1098,59 @@ public class CursorMenuPlugin extends JavaPlugin {
             player.setInvisible(false);
             player.setCollidable(true);
 
-            // 只有在 cleanLocation 为 true 时才传送回原始位置
+            // Only teleport back to original location when cleanLocation is true
             if (cleanLocation) {
                 Location originalLoc = playerLocations.remove(player);
                 if (originalLoc != null) {
                     player.teleport(originalLoc);
                 }
 
-                // 清理悬停放大效果
+                // Clean up hover-enlarge effects
                 if (hoverEnlargeManager != null) {
                     hoverEnlargeManager.cleanupPlayer(player);
                 }
             }
 
-            // 检查玩家是否在登录或注册菜单中，如果是则清除密码数据
+            // If player is in a login or registration menu, clear password data
             String currentMenu = currentPlayerMenus.get(player);
-            if ("登录菜单".equals(currentMenu) || "注册菜单".equals(currentMenu)) {
+            if ("Login Menu".equals(currentMenu) || "Registration Menu".equals(currentMenu)) {
                 Map<String, String> playerData = getPlayerInputData(player);
                 playerData.remove("password");
                 playerData.remove("confirm_password");
-                
-                // 同时清除Commands类中的用户输入数据
+
+                // Also clear user input data from the Commands class
                 Map<UUID, Map<String, String>> commandsUserInputData = Commands.getUserInputData();
                 Map<String, String> commandsPlayerData = commandsUserInputData.get(player.getUniqueId());
                 if (commandsPlayerData != null) {
                     commandsPlayerData.remove("password");
                     commandsPlayerData.remove("confirm_password");
                 }
-                
-                // 清除密码可见性状态
+
+                // Clear password visibility state
                 passwordVisibility.remove(player.getUniqueId());
             }
 
             if (debugMode) {
-                player.sendMessage(getLangMessage("menu.cursor_deactivated", "&c[CursorMenu] 光标菜单已关闭!"));
+                player.sendMessage(getLangMessage("menu.cursor_deactivated", "&c[CursorMenu] Cursor menu closed!"));
             }
             textDisplayManager.clearPlayerDisplays(player.getUniqueId());
             sendCameraPacket(player, player);
             restoreBlocks(player);
 
-            // 清理光标位置缓存
+            // Clear cursor location cache
             cursorExactLocations.remove(player);
 
-            // 清理用户输入数据
+            // Clear user input data
             currentPlayerInputFields.remove(player.getUniqueId());
             userInputData.remove(player.getUniqueId());
             passwordVisibility.remove(player.getUniqueId());
 
-            // 移除NPC镜像
+            // Remove NPC mirror
             NPCModule.onMenuClose(player);
 
-            // 停止WASD导航会话
+            // Stop WASD navigation session
             WASDModule.onMenuClose(player);
-        }, 5L); // 延迟 5 tick
+        }, 5L); // Delay 5 ticks
     }
 
     private ArmorStand spawnCursorArmorStand(Location location) {
@@ -1366,7 +1158,7 @@ public class CursorMenuPlugin extends JavaPlugin {
         armorStand.setGravity(false);
         armorStand.setVisible(false);
         armorStand.setMarker(true);
-        setTeleportDurationSafe(armorStand, 2); // 设置为2以确保平滑移动
+        setTeleportDurationSafe(armorStand, 2); // Set to 2 for smooth movement
         return armorStand;
     }
 
@@ -1394,7 +1186,7 @@ public class CursorMenuPlugin extends JavaPlugin {
         return textDisplay;
     }
 
-    private ItemDisplay spawnCursorItemDisplay(Player player,Location location) {
+    private ItemDisplay spawnCursorItemDisplay(Player player, Location location) {
         ItemDisplay itemDisplay = location.getWorld().spawn(location, ItemDisplay.class);
         ItemStack item = new ItemStack(Material.valueOf(cursorItem));
         ItemMeta itemMeta = item.getItemMeta();
@@ -1407,14 +1199,14 @@ public class CursorMenuPlugin extends JavaPlugin {
         Transformation transformation = itemDisplay.getTransformation();
         transformation.getScale().set(cursorScale);
         itemDisplay.setTransformation(transformation);
-        player.showEntity(this,itemDisplay);
-        setTeleportDurationSafe(itemDisplay, 2); // 设置为2以确保平滑移动
+        player.showEntity(this, itemDisplay);
+        setTeleportDurationSafe(itemDisplay, 2); // Set to 2 for smooth movement
         return itemDisplay;
     }
 
     private void sendCameraPacket(Player player, Entity entity) {
         try {
-            // 使用 PacketEvents 发送摄像机数据包
+            // Send camera packet using PacketEvents
             WrapperPlayServerCamera cameraPacket = new WrapperPlayServerCamera(entity.getEntityId());
             PacketEvents.getAPI().getPlayerManager().sendPacket(player, cameraPacket);
         } catch (Exception e) {
@@ -1426,8 +1218,8 @@ public class CursorMenuPlugin extends JavaPlugin {
     private void mountPlayerToVehicle(Player player, Entity entity) {
     }
 
-    private double calculateCursor(double original,double calc) {
-        if(calc <= 0){
+    private double calculateCursor(double original, double calc) {
+        if (calc <= 0) {
             return original + Math.abs(calc);
         } else {
             return original - Math.abs(calc);
@@ -1457,13 +1249,13 @@ public class CursorMenuPlugin extends JavaPlugin {
         Vector right = new Vector(-dir.getZ(), 0, dir.getX()).normalize();
         Vector up    = dir.getCrossProduct(right).multiply(-1);
 
-        // 计算屏幕坐标
+        // Calculate screen coordinates
         double screenX = (yaw / (90D / maxX)) + cursorX;
         double screenY = (pitch / (90D / maxY)) + cursorY;
 
-        // 应用光标移动范围限制
+        // Apply cursor movement range limits
         if (cursorMovementRangeEnabled) {
-            // 限制光标移动范围，但不强制"环绕"
+            // Clamp cursor range without wrapping
             screenX = Math.max(cursorMovementRangeXMin, Math.min(cursorMovementRangeXMax, screenX));
             screenY = Math.max(cursorMovementRangeYMin, Math.min(cursorMovementRangeYMax, screenY));
         }
@@ -1489,14 +1281,14 @@ public class CursorMenuPlugin extends JavaPlugin {
     }
 
     /**
-     * 检查两个菜单是否在同一位置
+     * Check whether two menus are at the same location
      */
     private boolean isSameLocation(Section section1, Section section2) {
         if (!section1.world.equals(section2.world)) {
             return false;
         }
 
-        double epsilon = 1e-6; // 浮点数比较的容差
+        double epsilon = 1e-6; // Tolerance for floating-point comparison
         return section1.cameraX == section2.cameraX &&
                 section1.cameraY == section2.cameraY &&
                 section1.cameraZ == section2.cameraZ &&
@@ -1505,43 +1297,43 @@ public class CursorMenuPlugin extends JavaPlugin {
     }
 
     /**
-     * 刷新菜单内容而不关闭菜单
+     * Refresh menu content without closing the menu
      */
     private void refreshMenuContent(Player player, String newMenuKey, String oldMenuKey) {
-        // 检查是否是从登录/注册菜单切换到其他菜单，如果是则清除密码数据
-        if (("登录菜单".equals(oldMenuKey) || "注册菜单".equals(oldMenuKey)) && 
-            !("登录菜单".equals(newMenuKey) || "注册菜单".equals(newMenuKey))) {
-            
-            // 清除密码相关数据
+        // If switching away from a login/registration menu, clear password data
+        if (("Login Menu".equals(oldMenuKey) || "Registration Menu".equals(oldMenuKey)) &&
+                !("Login Menu".equals(newMenuKey) || "Registration Menu".equals(newMenuKey))) {
+
+            // Clear password-related data
             Map<String, String> playerData = getPlayerInputData(player);
             playerData.remove("password");
             playerData.remove("confirm_password");
-            
-            // 同时清除Commands类中的用户输入数据
+
+            // Also clear user input data from the Commands class
             Map<UUID, Map<String, String>> commandsUserInputData = Commands.getUserInputData();
             Map<String, String> commandsPlayerData = commandsUserInputData.get(player.getUniqueId());
             if (commandsPlayerData != null) {
                 commandsPlayerData.remove("password");
                 commandsPlayerData.remove("confirm_password");
             }
-            
-            // 清除密码可见性状态
+
+            // Clear password visibility state
             passwordVisibility.remove(player.getUniqueId());
         }
-        
-        // 更新当前菜单键
+
+        // Update current menu key
         currentPlayerMenus.put(player, newMenuKey);
 
         Section newSection = sectionManager.get(newMenuKey);
         if (newSection == null) return;
 
-        // 保存当前输入字段状态
+        // Save current input field state
         String currentInputField = getCurrentPlayerInputField(player);
-        
-        // 移除旧的文字显示实体
+
+        // Remove old text display entities
         List<TextDisplay> oldTextDisplays = playerDisplays.get(player);
         if (oldTextDisplays != null) {
-            // 在主线程中移除实体以避免异步错误
+            // Remove entities on the main thread to avoid async errors
             foliaLib.scheduling().entitySpecificScheduler(player).run(() -> {
                 oldTextDisplays.forEach(display -> {
                     if (display != null && !display.isDead()) {
@@ -1552,7 +1344,7 @@ public class CursorMenuPlugin extends JavaPlugin {
             }, null);
         }
 
-        // 创建新的文字显示实体
+        // Create new text display entities
         List<TextDisplay> newTextDisplays = new ArrayList<>();
         World world = Bukkit.getWorld(newSection.world);
         if (world == null) return;
@@ -1569,7 +1361,7 @@ public class CursorMenuPlugin extends JavaPlugin {
             Location textLocation = cameraLocation.clone().add(textOffset);
 
             TextDisplay t = world.spawn(textLocation, TextDisplay.class);
-            // 确保在刷新时也正确处理占位符
+            // Ensure placeholders are correctly processed on refresh
             String parsedName = parsePlaceholders(player, layout.name);
             t.setText(ColorParser.toLegacyString(parsedName));
             t.setCustomName(newMenuKey + ":" + layout.key);
@@ -1587,24 +1379,24 @@ public class CursorMenuPlugin extends JavaPlugin {
             float rollRad = (float) Math.toRadians(layout.tiltZ);
             Transformation trans = t.getTransformation();
             trans.getLeftRotation().rotationYXZ(yawRad, pitchRad, rollRad);
-            
-            // 设置文本大小
+
+            // Set text size
             trans.getScale().set(layout.getTextSize());
-            
+
             t.setTransformation(trans);
         }
 
         playerDisplays.put(player, newTextDisplays);
 
-        // 恢复当前输入字段状态
+        // Restore current input field state
         if (currentInputField != null) {
             setCurrentPlayerInputField(player, currentInputField);
         }
 
-        // 更新文字显示管理器
+        // Update text display manager
         textDisplayManager.showTextDisplays(player, newMenuKey);
 
-        // 执行新菜单的自动命令（如果有）
+        // Execute auto-commands for the new menu (if any)
         if (newSection.autoCommandsEnabled && !newSection.autoCommands.isEmpty()) {
             for (int i = 0; i < newSection.autoCommands.size(); i++) {
                 String cmd = newSection.autoCommands.get(i);
@@ -1614,7 +1406,7 @@ public class CursorMenuPlugin extends JavaPlugin {
 
                 String processedCmd = parsePlaceholders(player, cmd);
                 foliaLib.scheduling().entitySpecificScheduler(player).runDelayed(task -> {
-                    // 检查玩家是否仍在菜单中再执行命令
+                    // Verify player is still in the menu before executing command
                     if (!player.isOnline() || !playerCursors.containsKey(player)) return;
 
                     if (processedCmd.toLowerCase().startsWith("[console]")) {
@@ -1643,7 +1435,7 @@ public class CursorMenuPlugin extends JavaPlugin {
         }
     }
 
-    private void runLayout(Player player,String key) {
+    private void runLayout(Player player, String key) {
         MenuLayout menuLayout = sectionManager.getLayout(key);
         menuLayout.runCommand(player);
     }
@@ -1697,7 +1489,7 @@ public class CursorMenuPlugin extends JavaPlugin {
                             if (textDisplay != null && TextDisplayHitBox.isInside(textDisplay, cursorLoc)) {
                                 minDistance = 0;
                                 closest = textDisplay;
-                                break; // 找到后立即跳出循环
+                                break; // Break immediately once found
                             }
                         }
 
@@ -1715,7 +1507,7 @@ public class CursorMenuPlugin extends JavaPlugin {
         });
     }
 
-    // 添加处理文本悬停放大的方法
+    // Handle text display hover-enlarge
     public void handleTextDisplayHover(Player player, TextDisplay textDisplay) {
         String menuKey = getCurrentPlayerMenu(player);
         if (menuKey == null || !textDisplay.getScoreboardTags().contains("hover_enlarge_processed")) {
@@ -1727,17 +1519,17 @@ public class CursorMenuPlugin extends JavaPlugin {
             return;
         }
 
-        // 应用放大效果
+        // Apply enlarge effect
         Transformation transformation = textDisplay.getTransformation();
         org.joml.Vector3f scale = transformation.getScale();
         scale.mul((float) layout.getHoverEnlargeScale());
         textDisplay.setTransformation(transformation);
 
-        // 标记已处理，避免重复处理
+        // Mark as processed to avoid duplicate handling
         textDisplay.addScoreboardTag("hover_enlarge_processed");
     }
 
-    // 添加重置文本显示大小的方法
+    // Reset text display size
     public void resetTextDisplaySize(Player player, TextDisplay textDisplay) {
         if (!textDisplay.getScoreboardTags().contains("hover_enlarge_processed")) {
             return;
@@ -1753,30 +1545,30 @@ public class CursorMenuPlugin extends JavaPlugin {
             return;
         }
 
-        // 重置大小
+        // Reset size
         Transformation transformation = textDisplay.getTransformation();
         org.joml.Vector3f scale = transformation.getScale();
         scale.div((float) layout.getHoverEnlargeScale());
         textDisplay.setTransformation(transformation);
 
-        // 移除处理标记
+        // Remove processed tag
         textDisplay.removeScoreboardTag("hover_enlarge_processed");
     }
 
-    /* ===== 减少延迟 ===== */
+    /* ===== Reduce latency ===== */
     private void setTeleportDurationSafe(Entity entity, int duration) {
         try {
             java.lang.reflect.Method method = entity.getClass().getMethod("setTeleportDuration", int.class);
             method.invoke(entity, duration);
         } catch (NoSuchMethodException ignored) {
-            // 旧版本跳过
+            // Skip on older versions
         } catch (Exception e) {
-            getLogger().warning("无法设置 teleport duration: " + e.getMessage());
+            getLogger().warning("Failed to set teleport duration: " + e.getMessage());
         }
     }
 
 
-    /* ========== 攻击/破坏检测监听器 ========== */
+    /* ========== Attack/Break detection listener ========== */
     public static class AttackBreakListener implements Listener {
 
         @EventHandler
@@ -1817,50 +1609,50 @@ public class CursorMenuPlugin extends JavaPlugin {
     private static final String HELMET_META_KEY = "cursor_original_helmet";
 
     public void storeHelmet(Player player) {
-        // 保存原始头盔
+        // Save original helmet
         ItemStack original = player.getInventory().getHelmet();
         player.setMetadata(HELMET_META_KEY, new FixedMetadataValue(this, original));
 
-        // 创建南瓜头物品
+        // Create pumpkin head item
         ItemStack pumpkin = new ItemStack(Material.CARVED_PUMPKIN);
         ItemMeta meta = pumpkin.getItemMeta();
         meta.addEnchant(Enchantment.BINDING_CURSE, 1, true);
-        meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS); // 隐藏附魔光效（可选）
+        meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS); // Hide enchant glow (optional)
         pumpkin.setItemMeta(meta);
 
-        // 在玩家头顶生成ItemDisplay实体
-        Location location = player.getLocation().clone().add(0, 1.7, 0); // 调整位置到玩家头顶
+        // Spawn an ItemDisplay entity above the player's head
+        Location location = player.getLocation().clone().add(0, 1.7, 0); // Adjust to player head height
         ItemDisplay pumpkinDisplay = location.getWorld().spawn(location, ItemDisplay.class);
         pumpkinDisplay.setItemStack(pumpkin);
-        pumpkinDisplay.setBillboard(Display.Billboard.FIXED); // 保持固定朝向
+        pumpkinDisplay.setBillboard(Display.Billboard.FIXED); // Keep fixed orientation
         pumpkinDisplay.setRotation(location.getYaw(), location.getPitch());
-        pumpkinDisplay.setVisibleByDefault(false); // 默认对所有玩家不可见
+        pumpkinDisplay.setVisibleByDefault(false); // Hidden from all players by default
         pumpkinDisplay.setPersistent(false);
         pumpkinDisplay.setInvulnerable(true);
         pumpkinDisplay.setGravity(false);
-        
-        // 只让当前玩家看到这个南瓜头
+
+        // Only show the pumpkin head to the current player
         player.showEntity(this, pumpkinDisplay);
-        
-        // 隐藏其他玩家看到的这个南瓜头
+
+        // Hide pumpkin head from all other players
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other != player) {
                 other.hideEntity(this, pumpkinDisplay);
             }
         }
-        
-        // 存储这个南瓜头实体
+
+        // Store the pumpkin display entity
         playerPumpkinDisplays.put(player, pumpkinDisplay);
     }
 
     private void restoreHelmet(Player player) {
-        // 移除南瓜头ItemDisplay实体
+        // Remove pumpkin ItemDisplay entity
         ItemDisplay pumpkinDisplay = playerPumpkinDisplays.remove(player);
         if (pumpkinDisplay != null && pumpkinDisplay.isValid()) {
             pumpkinDisplay.remove();
         }
 
-        // 如果有保存的原始头盔，则恢复它
+        // If an original helmet was saved, restore it
         if (player.hasMetadata(HELMET_META_KEY)) {
             for (var value : player.getMetadata(HELMET_META_KEY)) {
                 if (value.getOwningPlugin() == this) {
@@ -1882,7 +1674,7 @@ public class CursorMenuPlugin extends JavaPlugin {
     }
 
     /**
-     * 当玩家离线瞬间立即把菜单相关的东西全部清掉
+     * Immediately clean up all menu-related state when a player goes offline
      */
     private class SessionCleanupListener implements Listener {
 
@@ -1899,17 +1691,17 @@ public class CursorMenuPlugin extends JavaPlugin {
         @EventHandler(priority = EventPriority.HIGHEST)
         public void onJoin(PlayerJoinEvent e) {
             Player player = e.getPlayer();
-            // 玩家每次加入服务器时都清除其登录状态，确保需要重新登录
+            // Clear login state on every join to force re-authentication
             setPlayerLoggedIn(player, false);
-            
-            // 确保新加入的玩家看不到其他玩家的南瓜头
+
+            // Ensure newly joined players cannot see other players' pumpkin heads
             for (ItemDisplay pumpkinDisplay : playerPumpkinDisplays.values()) {
                 if (pumpkinDisplay != null && pumpkinDisplay.isValid()) {
                     player.hideEntity(CursorMenuPlugin.this, pumpkinDisplay);
                 }
             }
-            
-            // 强制恢复，无论是否进入过菜单
+
+            // Force restore game mode regardless of whether the player was in a menu
             if (player.hasMetadata("cursor_original_gamemode")) {
                 String mode = player.getMetadata("cursor_original_gamemode").get(0).asString();
                 try {
@@ -1919,71 +1711,71 @@ public class CursorMenuPlugin extends JavaPlugin {
                 }
                 player.removeMetadata("cursor_original_gamemode", CursorMenuPlugin.this);
             } else {
-                // 默认恢复为生存模式
+                // Default to survival mode
                 player.setGameMode(GameMode.SURVIVAL);
             }
         }
         /**
-         * 同步清理，必须在主线程直接跑
+         * Synchronous cleanup — must run directly on the main thread
          */
         private void cleanup(Player player) {
-            // 检查玩家是否在登录或注册菜单中，如果是则清除密码数据
+            // If player is in a login or registration menu, clear password data
             String currentMenu = currentPlayerMenus.get(player);
-            if ("登录菜单".equals(currentMenu) || "注册菜单".equals(currentMenu)) {
+            if ("Login Menu".equals(currentMenu) || "Registration Menu".equals(currentMenu)) {
                 Map<String, String> playerData = getPlayerInputData(player);
                 playerData.remove("password");
                 playerData.remove("confirm_password");
-                
-                // 同时清除Commands类中的用户输入数据
+
+                // Also clear user input data from the Commands class
                 Map<UUID, Map<String, String>> commandsUserInputData = Commands.getUserInputData();
                 Map<String, String> commandsPlayerData = commandsUserInputData.get(player.getUniqueId());
                 if (commandsPlayerData != null) {
                     commandsPlayerData.remove("password");
                     commandsPlayerData.remove("confirm_password");
                 }
-                
-                // 清除密码可见性状态
+
+                // Clear password visibility state
                 passwordVisibility.remove(player.getUniqueId());
             }
-            
-            // 确保玩家退出时清除登录状态
+
+            // Clear login state when player leaves
             setPlayerLoggedIn(player, false);
-            
+
             if (!playerCursors.containsKey(player)) return;
 
-            // 1. 取猪，把玩家踢下来
+            // 1. Remove pig and dismount player
             Pig pig = playerSit.remove(player);
             if (pig != null) {
                 pig.removePassenger(player);
                 pig.remove();
             }
 
-            // 2. 光标
+            // 2. Cursor armor stand
             ArmorStand cursor = playerCursors.remove(player);
             if (cursor != null) cursor.remove();
 
-            // 3. 文字显示
+            // 3. Text displays
             List<TextDisplay> texts = playerDisplays.remove(player);
             if (texts != null) texts.forEach(Entity::remove);
 
-            // 4. 物品显示
+            // 4. Item display
             ItemDisplay item = playerItemDisplays.remove(player);
             if (item != null) item.remove();
 
-            // 5. 声音
+            // 5. Sound
             playingSound.remove(player.getName());
             player.stopAllSounds();
 
-            // 6. 头盔
-            // 总是尝试恢复头盔，无论usePumpkinOverlay设置如何
-            // 这样可以确保即使在菜单运行过程中启用南瓜头，退出时也能正确清理
+            // 6. Helmet
+            // Always attempt to restore the helmet regardless of usePumpkinOverlay setting.
+            // This ensures correct cleanup even if pumpkin overlay was enabled mid-session.
             restoreHelmet(player);
 
-            // 7. 可见性、碰撞
+            // 7. Visibility and collision
             player.setInvisible(false);
             player.setCollidable(true);
 
-            // 8. 游戏模式
+            // 8. Game mode
             if (player.hasMetadata("cursor_original_gamemode")) {
                 String mode = player.getMetadata("cursor_original_gamemode").get(0).asString();
                 player.setGameMode(GameMode.valueOf(mode));
@@ -1992,10 +1784,10 @@ public class CursorMenuPlugin extends JavaPlugin {
                 player.setGameMode(GameMode.SURVIVAL);
             }
 
-            // 9. 摄像机切回玩家本身
+            // 9. Restore camera to player
             sendCameraPacket(player, player);
 
-            // 10. 清掉记录
+            // 10. Clear all records
             playerLocations.remove(player);
             cursorExactLocations.remove(player);
             currentPlayerMenus.remove(player);
@@ -2020,7 +1812,7 @@ public class CursorMenuPlugin extends JavaPlugin {
         File file = getPlayerBlockFile(player);
         YamlConfiguration config = new YamlConfiguration();
 
-        // 定义不可清除的方块类型
+        // Define block types that must not be cleared
         Set<Material> skip = EnumSet.of(
                 Material.CHEST,
                 Material.TRAPPED_CHEST,
@@ -2031,7 +1823,7 @@ public class CursorMenuPlugin extends JavaPlugin {
                 Material.BLAST_FURNACE,
                 Material.SMOKER,
                 Material.BREWING_STAND,
-                // 所有颜色的潜影盒
+                // All shulker box colors
                 Material.SHULKER_BOX,
                 Material.WHITE_SHULKER_BOX,
                 Material.ORANGE_SHULKER_BOX,
@@ -2059,13 +1851,13 @@ public class CursorMenuPlugin extends JavaPlugin {
                     Block block = world.getBlockAt(l);
                     Material type = block.getType();
 
-                    // 跳过空气和敏感容器
+                    // Skip air blocks and protected containers
                     if (type.isAir() || skip.contains(type)) continue;
 
                     String key = l.getBlockX() + "," + l.getBlockY() + "," + l.getBlockZ();
                     config.set(key + ".world", l.getWorld().getName());
                     config.set(key + ".type", block.getBlockData().getAsString());
-                    block.setType(Material.AIR, false); // 不触发物理更新
+                    block.setType(Material.AIR, false); // No physics update
                 }
             }
         }
@@ -2073,7 +1865,7 @@ public class CursorMenuPlugin extends JavaPlugin {
         try {
             config.save(file);
         } catch (IOException e) {
-            getLogger().warning("无法保存方块缓存文件: " + e.getMessage());
+            getLogger().warning("Failed to save block cache file: " + e.getMessage());
         }
     }
 
@@ -2107,39 +1899,39 @@ public class CursorMenuPlugin extends JavaPlugin {
         public void onPlayerJoin(PlayerJoinEvent event) {
             Player player = event.getPlayer();
 
-            // 每次玩家加入服务器时都清除其登录状态，确保需要重新登录
+            // Clear login state on every join to force re-authentication
             setPlayerLoggedIn(player, false);
 
-            // 检查是否启用了加入执行功能
+            // Check whether the join-run feature is enabled
             if (joinRunBool) {
-                // 转换延迟时间（配置中是秒，这里转为ticks，1秒=20ticks）
+                // Convert delay to ticks (config is in seconds; 1 second = 20 ticks)
                 long delayTicks = (long) runDelay * 20;
 
-                // 延迟执行
+                // Execute after delay
                 foliaLib.scheduling().entitySpecificScheduler(player).runDelayed(task -> {
                     if (player.isOnline()) {
-                        // 1. 执行菜单（原有功能）
+                        // 1. Open menu (original feature)
                         if (sectionManager.hasSection(joinRunSection)) {
                             setupCursor(player, joinRunSection);
                         } else {
-                            getLogger().warning("配置的加入执行菜单 '" + joinRunSection + "' 不存在！");
+                            getLogger().warning("Configured join-run menu '" + joinRunSection + "' does not exist!");
                         }
 
-                        // 2. 执行自定义命令（新增功能）
+                        // 2. Execute custom commands (new feature)
                         for (String cmd : joinRunCommands) {
-                            // 处理占位符
-                            String processedCmd = cmd; // 不再替换 %player%
+                            // Process placeholders
+                            String processedCmd = cmd;
                             if (hasPAPI) {
                                 processedCmd = PlaceholderAPI.setPlaceholders(player, processedCmd);
                             }
 
-                            // 执行命令
+                            // Execute command
                             if (processedCmd.toLowerCase().startsWith("[console]")) {
                                 String finalCmd = processedCmd.replaceAll("\\[console\\]", "").trim();
                                 if (!finalCmd.isEmpty()) {
                                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), finalCmd);
                                 } else {
-                                    getLogger().warning("试图执行空控制台命令: " + processedCmd);
+                                    getLogger().warning("Attempted to execute empty console command: " + processedCmd);
                                 }
                             } else if (processedCmd.toLowerCase().startsWith("[op]")) {
                                 String finalCmd = processedCmd.replaceAll("\\[op\\]", "").trim();
@@ -2155,7 +1947,7 @@ public class CursorMenuPlugin extends JavaPlugin {
                                         }
                                     }
                                 } else {
-                                    getLogger().warning("试图执行空OP命令: " + processedCmd);
+                                    getLogger().warning("Attempted to execute empty OP command: " + processedCmd);
                                 }
                             } else {
                                 String finalCmd = processedCmd;
@@ -2165,7 +1957,7 @@ public class CursorMenuPlugin extends JavaPlugin {
                                 if (!finalCmd.isEmpty()) {
                                     player.performCommand(finalCmd);
                                 } else {
-                                    getLogger().warning("试图执行空玩家命令: " + processedCmd);
+                                    getLogger().warning("Attempted to execute empty player command: " + processedCmd);
                                 }
                             }
                         }
@@ -2180,37 +1972,37 @@ public class CursorMenuPlugin extends JavaPlugin {
                 "menu/example.yml",
                 "menu/login_register.yml",
                 "menu/login_menu.yml",
-                // ✅ 在 resources/menu/ 里的文件名都列出来
+                // List all files present in resources/menu/
         };
 
         for (String fileName : defaultMenuFiles) {
             File file = new File(getDataFolder(), fileName);
             if (!file.exists()) {
-                file.getParentFile().mkdirs(); // 创建 menu 文件夹
+                file.getParentFile().mkdirs(); // Create menu folder
                 try {
                     saveResource(fileName, false);
-                    getLogger().info("已生成默认菜单文件: " + fileName);
+                    getLogger().info("Generated default menu file: " + fileName);
                 } catch (IllegalArgumentException e) {
-                    // 资源不存在时，静默跳过
+                    // Silently skip if resource does not exist
                 }
             }
         }
     }
 
     private void startChunkLoaderTask() {
-        // 停止旧任务
+        // Stop any existing task
         stopChunkLoaderTask();
 
-        // 初始化强制加载（后续通过updatePersistentChunks更新）
+        // Initialize force-loading (updated later via updatePersistentChunks)
         updatePersistentChunks();
 
-        // 可选：每30秒验证一次区块状态（防止意外卸载）
-        chunkLoaderTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, this::updatePersistentChunks, 0L, 600L); // 30秒一次
+        // Optional: verify chunk state every 30 seconds to prevent unexpected unloading
+        chunkLoaderTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, this::updatePersistentChunks, 0L, 600L); // Every 30 seconds
     }
 
-    // 添加新方法：停止区块加载任务
+    // Stop the chunk loader task
     private void stopChunkLoaderTask() {
-        // 解除所有强制加载的区块
+        // Release all force-loaded chunks
         for (Map.Entry<String, Set<Long>> entry : forcedLoadedChunks.entrySet()) {
             String worldName = entry.getKey();
             World world = Bukkit.getWorld(worldName);
@@ -2228,35 +2020,35 @@ public class CursorMenuPlugin extends JavaPlugin {
         }
         forcedLoadedChunks.clear();
 
-        // 取消定时任务
+        // Cancel scheduled task
         if (chunkLoaderTaskId != -1) {
             Bukkit.getScheduler().cancelTask(chunkLoaderTaskId);
             chunkLoaderTaskId = -1;
         }
     }
 
-    // 添加新方法：更新需要持续加载的区块列表
+    // Update the list of chunks that should remain persistently loaded
     private void updatePersistentChunks() {
-        // 1. 先记录当前所有强制加载的区块（用于后续清理）
+        // 1. Record all currently force-loaded chunks (for later cleanup)
         Map<String, Set<Long>> oldChunks = new HashMap<>();
-        // 关键：对内部集合也做深拷贝，避免修改原集合
+        // Deep-copy inner sets to avoid modifying the original collection
         for (Map.Entry<String, Set<Long>> entry : forcedLoadedChunks.entrySet()) {
             oldChunks.put(entry.getKey(), new HashSet<>(entry.getValue()));
         }
 
-        // 2. 计算新的需要加载的区块（完全新建，不修改旧集合）
+        // 2. Compute new chunks to load (build fresh, do not modify old set)
         Map<String, Set<Long>> newChunks = new HashMap<>();
         for (Section section : sectionManager.getAll().values()) {
             World world = Bukkit.getWorld(section.world);
             if (world == null) continue;
 
-            // 计算菜单相机位置所在的区块
+            // Compute chunk for the menu camera position
             int chunkX = (int) Math.floor(section.cameraX / 16);
             int chunkZ = (int) Math.floor(section.cameraZ / 16);
             long chunkKey = ((long) chunkX << 32) | (chunkZ & 0xFFFFFFFFL);
             newChunks.computeIfAbsent(section.world, k -> new HashSet<>()).add(chunkKey);
 
-            // 处理菜单内其他元素的区块
+            // Handle chunks for other menu elements
             if (section.layouts != null) {
                 for (MenuLayout layout : section.layouts.values()) {
                     int layoutChunkX = (int) Math.floor((section.cameraX + layout.x) / 16);
@@ -2267,7 +2059,7 @@ public class CursorMenuPlugin extends JavaPlugin {
             }
         }
 
-        // 3. 对新增的区块：标记为强制加载
+        // 3. Force-load newly added chunks
         for (Map.Entry<String, Set<Long>> entry : newChunks.entrySet()) {
             String worldName = entry.getKey();
             World world = Bukkit.getWorld(worldName);
@@ -2278,60 +2070,60 @@ public class CursorMenuPlugin extends JavaPlugin {
                 int x = (int) (chunkKey >> 32);
                 int z = (int) (chunkKey & 0xFFFFFFFFL);
 
-                // 兼容所有版本的加载逻辑
+                // Version-compatible loading logic
                 if (!world.isChunkLoaded(x, z)) {
-                    world.loadChunk(x, z, true); // 加载区块
+                    world.loadChunk(x, z, true); // Load chunk
                     Chunk chunk = world.getChunkAt(x, z);
                     if (chunk != null) {
-                        chunk.setForceLoaded(true); // 标记强制加载
+                        chunk.setForceLoaded(true); // Mark as force-loaded
                     }
                 } else {
                     Chunk chunk = world.getChunkAt(x, z);
                     chunk.setForceLoaded(true);
                 }
 
-                // 记录到强制加载列表
+                // Record in force-loaded list
                 forcedLoadedChunks.computeIfAbsent(worldName, k -> new HashSet<>()).add(chunkKey);
             }
         }
 
-        // 4. 单独处理需要移除的区块（与遍历新集合分离）
+        // 4. Handle chunk removal separately (isolated from the new-chunk iteration)
         for (Map.Entry<String, Set<Long>> entry : oldChunks.entrySet()) {
             String worldName = entry.getKey();
             World world = Bukkit.getWorld(worldName);
             if (world == null) continue;
 
             Set<Long> oldChunkKeys = entry.getValue();
-            // 过滤出不在新集合中的区块（需要移除）
+            // Filter chunks that are no longer in the new set (need to be removed)
             for (long chunkKey : oldChunkKeys) {
                 Set<Long> newChunkKeys = newChunks.getOrDefault(worldName, Collections.emptySet());
                 if (!newChunkKeys.contains(chunkKey)) {
-                    // 解除强制加载
+                    // Release force-loading
                     int x = (int) (chunkKey >> 32);
                     int z = (int) (chunkKey & 0xFFFFFFFFL);
                     Chunk chunk = world.getChunkAt(x, z);
                     if (chunk != null) {
                         chunk.setForceLoaded(false);
                     }
-                    // 从强制加载列表中移除
+                    // Remove from force-loaded list
                     forcedLoadedChunks.getOrDefault(worldName, new HashSet<>()).remove(chunkKey);
                 }
             }
         }
 
-        // 清理空的世界条目
+        // Clean up empty world entries
         forcedLoadedChunks.entrySet().removeIf(e -> e.getValue().isEmpty());
 
         if (debugMode) {
-            getLogger().info("已更新强制加载区块：共 " + forcedLoadedChunks.size() + " 个世界，" +
-                    forcedLoadedChunks.values().stream().mapToInt(Set::size).sum() + " 个区块");
+            getLogger().info("Force-loaded chunks updated: " + forcedLoadedChunks.size() + " world(s), " +
+                    forcedLoadedChunks.values().stream().mapToInt(Set::size).sum() + " chunk(s)");
         }
     }
 
     /**
-     * 发送ActionBar消息给玩家
-     * @param player 要发送消息的玩家
-     * @param message 消息内容
+     * Send an ActionBar message to a player
+     * @param player Target player
+     * @param message Message content
      */
     public void sendActionBarMessage(Player player, String message) {
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(message));

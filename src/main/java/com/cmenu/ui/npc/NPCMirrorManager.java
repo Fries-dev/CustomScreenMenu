@@ -20,25 +20,25 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * NPC镜像管理器
- * 负责在3D菜单中创建和管理玩家镜像NPC
- * 
- * 这是一个独立的模块，不修改CMP核心代码
- * 通过钩子方式集成到菜单系统中
+ * NPC mirror manager.
+ * Responsible for creating and managing player mirror NPCs in 3D menus.
+ *
+ * This is a standalone module that does not modify the CMP core code.
+ * It integrates with the menu system via hooks.
  */
 public class NPCMirrorManager {
 
     private static NPCMirrorManager instance;
     private final JavaPlugin plugin;
-    
+
     private FancyNpcsPlugin fancyNpcsPlugin;
     private SkinsRestorer skinsRestorer;
     private boolean fancyNpcsEnabled = false;
     private boolean skinsRestorerEnabled = false;
-    
+
     private final Map<UUID, Npc> playerNPCs = new ConcurrentHashMap<>();
     private final Set<UUID> disabledPlayers = new HashSet<>();
-    
+
     private NPCConfig config;
 
     private NPCMirrorManager(JavaPlugin plugin) {
@@ -63,24 +63,24 @@ public class NPCMirrorManager {
             try {
                 fancyNpcsPlugin = (FancyNpcsPlugin) Bukkit.getPluginManager().getPlugin("FancyNpcs");
                 fancyNpcsEnabled = true;
-                plugin.getLogger().info("[NPCMirror] FancyNpcs 插件已找到，NPC镜像功能已启用");
+                plugin.getLogger().info("[NPCMirror] FancyNpcs plugin found, NPC mirror feature enabled");
             } catch (Exception e) {
-                plugin.getLogger().warning("[NPCMirror] 无法加载 FancyNpcs: " + e.getMessage());
+                plugin.getLogger().warning("[NPCMirror] Failed to load FancyNpcs: " + e.getMessage());
             }
         } else {
-            plugin.getLogger().info("[NPCMirror] FancyNpcs 插件未找到，NPC镜像功能已禁用");
+            plugin.getLogger().info("[NPCMirror] FancyNpcs plugin not found, NPC mirror feature disabled");
         }
 
         if (Bukkit.getPluginManager().isPluginEnabled("SkinsRestorer")) {
             try {
                 skinsRestorer = SkinsRestorerProvider.get();
                 skinsRestorerEnabled = true;
-                plugin.getLogger().info("[NPCMirror] SkinsRestorer 插件已找到，皮肤同步功能已启用");
+                plugin.getLogger().info("[NPCMirror] SkinsRestorer plugin found, skin sync feature enabled");
             } catch (Exception e) {
-                plugin.getLogger().warning("[NPCMirror] 无法加载 SkinsRestorer: " + e.getMessage());
+                plugin.getLogger().warning("[NPCMirror] Failed to load SkinsRestorer: " + e.getMessage());
             }
         } else {
-            plugin.getLogger().info("[NPCMirror] SkinsRestorer 插件未找到，将使用默认皮肤");
+            plugin.getLogger().info("[NPCMirror] SkinsRestorer plugin not found, default skin will be used");
         }
     }
 
@@ -89,9 +89,9 @@ public class NPCMirrorManager {
     }
 
     /**
-     * 检查指定菜单是否启用NPC
-     * @param menuKey 菜单键名
-     * @return 是否启用
+     * Checks whether NPC is enabled for the specified menu.
+     * @param menuKey the menu key
+     * @return whether enabled
      */
     public boolean isMenuEnabled(String menuKey) {
         return config.isMenuEnabled(menuKey);
@@ -105,10 +105,10 @@ public class NPCMirrorManager {
         UUID playerId = player.getUniqueId();
         if (enabled) {
             disabledPlayers.remove(playerId);
-            player.sendMessage("§a[NPCMirror] 已启用NPC镜像创建");
+            player.sendMessage("§a[NPCMirror] NPC mirror creation enabled");
         } else {
             disabledPlayers.add(playerId);
-            player.sendMessage("§c[NPCMirror] 已禁用NPC镜像创建");
+            player.sendMessage("§c[NPCMirror] NPC mirror creation disabled");
         }
         config.saveDisabledPlayers(disabledPlayers);
     }
@@ -120,22 +120,20 @@ public class NPCMirrorManager {
     }
 
     /**
-     * 为玩家创建镜像NPC
-     * @param player 玩家
-     * @param baseLocation NPC基准位置
-     * @param yaw NPC朝向yaw
-     * @param pitch NPC朝向pitch
-     * @param menuKey 菜单键名（用于检查是否启用NPC）
-     * @return 是否创建成功
+     * Creates a mirror NPC for the player.
+     * @param player the player
+     * @param baseLocation the base NPC location
+     * @param yaw the NPC facing yaw
+     * @param pitch the NPC facing pitch
+     * @param menuKey the menu key (used to check whether NPC is enabled)
+     * @return whether creation succeeded
      */
     public boolean createMirrorNPC(Player player, Location baseLocation, float yaw, float pitch, String menuKey) {
-        if (!isEnabled() || !isNPCCreationEnabled(player)) {
-            return false;
-        }
+        if (!isEnabled() || !isNPCCreationEnabled(player)) return false;
 
         if (menuKey != null && !isMenuEnabled(menuKey)) {
             if (config.isDebugMode()) {
-                plugin.getLogger().info("[NPCMirror] 菜单 " + menuKey + " 未启用NPC，跳过创建");
+                plugin.getLogger().info("[NPCMirror] Menu " + menuKey + " does not have NPC enabled, skipping creation");
             }
             return false;
         }
@@ -144,16 +142,14 @@ public class NPCMirrorManager {
 
         try {
             NpcManager npcManager = fancyNpcsPlugin.getNpcManager();
-            if (npcManager == null) {
-                return false;
-            }
+            if (npcManager == null) return false;
 
             Location npcLocation = calculateNPCLocation(baseLocation, yaw, pitch);
 
             NpcData npcData = new NpcData(
-                "CMP_MIRROR_" + player.getName(),
-                player.getUniqueId(),
-                npcLocation
+                    "CMP_MIRROR_" + player.getName(),
+                    player.getUniqueId(),
+                    npcLocation
             );
 
             applyPlayerSkin(player, npcData);
@@ -165,32 +161,28 @@ public class NPCMirrorManager {
             npc.create();
             npc.spawnForAll();
 
-            // 应用名称显示
+            // Apply name display
             updateNpcName(player, npc);
 
             playerNPCs.put(player.getUniqueId(), npc);
 
             if (config.isDebugMode()) {
-                plugin.getLogger().info("[NPCMirror] 已为玩家 " + player.getName() + " 创建镜像NPC");
+                plugin.getLogger().info("[NPCMirror] Mirror NPC created for player " + player.getName());
             }
 
             return true;
         } catch (Exception e) {
-            plugin.getLogger().warning("[NPCMirror] 创建NPC时出错: " + e.getMessage());
+            plugin.getLogger().warning("[NPCMirror] Error creating NPC: " + e.getMessage());
             return false;
         }
     }
 
-    /**
-     * 为玩家创建镜像NPC（使用默认配置位置，不带菜单检查）
-     */
+    /** Creates a mirror NPC using the default config location (without menu check). */
     public boolean createMirrorNPC(Player player, Location playerLocation) {
         return createMirrorNPC(player, playerLocation, config.getDefaultYaw(), config.getDefaultPitch(), null);
     }
 
-    /**
-     * 为玩家创建镜像NPC（使用默认配置位置，带菜单检查）
-     */
+    /** Creates a mirror NPC using the default config location (with menu check). */
     public boolean createMirrorNPC(Player player, Location playerLocation, String menuKey) {
         return createMirrorNPC(player, playerLocation, config.getDefaultYaw(), config.getDefaultPitch(), menuKey);
     }
@@ -204,68 +196,60 @@ public class NPCMirrorManager {
     }
 
     private void applyPlayerSkin(Player player, NpcData npcData) {
-        if (!skinsRestorerEnabled) {
-            return;
-        }
+        if (!skinsRestorerEnabled) return;
 
         try {
             PlayerStorage playerStorage = skinsRestorer.getPlayerStorage();
             Optional<SkinProperty> skin = playerStorage.getSkinForPlayer(
-                player.getUniqueId(), 
-                player.getName()
+                    player.getUniqueId(),
+                    player.getName()
             );
-            
+
             if (skin.isPresent()) {
                 npcData.setSkin(player.getName());
             }
         } catch (IllegalStateException e) {
-            plugin.getLogger().info("[NPCMirror] SkinsRestorer API不可用，跳过皮肤设置");
+            plugin.getLogger().info("[NPCMirror] SkinsRestorer API unavailable, skipping skin setup");
         } catch (Exception e) {
-            plugin.getLogger().warning("[NPCMirror] 无法获取玩家皮肤: " + e.getMessage());
+            plugin.getLogger().warning("[NPCMirror] Failed to retrieve player skin: " + e.getMessage());
         }
     }
 
     private void copyPlayerEquipment(Player player, NpcData npcData) {
         org.bukkit.inventory.PlayerInventory inv = player.getInventory();
 
-        setEquipmentIfPresent(npcData, NpcEquipmentSlot.HEAD, inv.getHelmet());
-        setEquipmentIfPresent(npcData, NpcEquipmentSlot.CHEST, inv.getChestplate());
-        setEquipmentIfPresent(npcData, NpcEquipmentSlot.LEGS, inv.getLeggings());
-        setEquipmentIfPresent(npcData, NpcEquipmentSlot.FEET, inv.getBoots());
+        setEquipmentIfPresent(npcData, NpcEquipmentSlot.HEAD,     inv.getHelmet());
+        setEquipmentIfPresent(npcData, NpcEquipmentSlot.CHEST,    inv.getChestplate());
+        setEquipmentIfPresent(npcData, NpcEquipmentSlot.LEGS,     inv.getLeggings());
+        setEquipmentIfPresent(npcData, NpcEquipmentSlot.FEET,     inv.getBoots());
         setEquipmentIfPresent(npcData, NpcEquipmentSlot.MAINHAND, inv.getItemInMainHand());
-        setEquipmentIfPresent(npcData, NpcEquipmentSlot.OFFHAND, inv.getItemInOffHand());
+        setEquipmentIfPresent(npcData, NpcEquipmentSlot.OFFHAND,  inv.getItemInOffHand());
     }
 
     private void applyNpcName(Player player, NpcData npcData) {
-        if (!config.isShowNpcName()) {
-            return;
-        }
+        if (!config.isShowNpcName()) return;
     }
 
-    /**
-     * 更新NPC的名称显示
-     */
+    /** Updates the NPC's name display. */
     public void updateNpcName(Player player, Npc npc) {
-        if (!config.isShowNpcName()) {
-            return;
-        }
+        if (!config.isShowNpcName()) return;
 
         String formattedName = config.getFormattedNpcName(player.getName(), player.getDisplayName());
-        
-        // 应用PlaceholderAPI变量
+
+        // Apply PlaceholderAPI variables
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             formattedName = PlaceholderAPI.setPlaceholders(player, formattedName);
         }
-        
+
         try {
             npc.getData().setDisplayName(formattedName);
             npc.updateForAll();
-            
+
             if (config.isDebugMode()) {
-                plugin.getLogger().info("[NPCMirror] 设置NPC名称: " + formattedName);
+                plugin.getLogger().info("[NPCMirror] Set NPC name: " + formattedName);
             }
         } catch (Exception e) {
-            plugin.getLogger().warning("[NPCMirror] 设置NPC名称时出错: " + e.getMessage());
+            plugin.getLogger().warning("[NPCMirror] Error setting NPC name: " + e.getMessage());
         }
     }
 
@@ -275,9 +259,7 @@ public class NPCMirrorManager {
         }
     }
 
-    /**
-     * 移除玩家的镜像NPC
-     */
+    /** Removes the player's mirror NPC. */
     public void removeMirrorNPC(Player player) {
         UUID playerId = player.getUniqueId();
         Npc npc = playerNPCs.remove(playerId);
@@ -286,14 +268,12 @@ public class NPCMirrorManager {
             try {
                 npc.removeForAll();
             } catch (Exception e) {
-                plugin.getLogger().warning("[NPCMirror] 移除NPC时出错: " + e.getMessage());
+                plugin.getLogger().warning("[NPCMirror] Error removing NPC: " + e.getMessage());
             }
         }
     }
 
-    /**
-     * 旋转玩家的NPC
-     */
+    /** Rotates the player's NPC. */
     public void rotateNPC(Player player, float yawOffset) {
         Npc npc = playerNPCs.get(player.getUniqueId());
         if (npc == null) return;
@@ -305,88 +285,65 @@ public class NPCMirrorManager {
             npc.getData().setLocation(location);
             npc.updateForAll();
         } catch (Exception e) {
-            plugin.getLogger().warning("[NPCMirror] 旋转NPC时出错: " + e.getMessage());
+            plugin.getLogger().warning("[NPCMirror] Error rotating NPC: " + e.getMessage());
         }
     }
 
-    /**
-     * 更新NPC位置
-     */
+    /** Updates the NPC's location. */
     public void updateNPCLocation(Player player, Location newLocation) {
         Npc npc = playerNPCs.get(player.getUniqueId());
         if (npc == null) return;
 
         try {
             Location npcLoc = calculateNPCLocation(
-                newLocation, 
-                newLocation.getYaw(), 
-                newLocation.getPitch()
+                    newLocation,
+                    newLocation.getYaw(),
+                    newLocation.getPitch()
             );
             npc.getData().setLocation(npcLoc);
             npc.updateForAll();
         } catch (Exception e) {
-            plugin.getLogger().warning("[NPCMirror] 更新NPC位置时出错: " + e.getMessage());
+            plugin.getLogger().warning("[NPCMirror] Error updating NPC location: " + e.getMessage());
         }
     }
 
-    /**
-     * 检查玩家是否有NPC
-     */
+    /** Checks whether the player has an NPC. */
     public boolean hasNPC(Player player) {
         return playerNPCs.containsKey(player.getUniqueId());
     }
 
-    /**
-     * 获取玩家的NPC
-     */
+    /** Returns the player's NPC. */
     public Npc getPlayerNPC(Player player) {
         return playerNPCs.get(player.getUniqueId());
     }
 
-    /**
-     * 清理所有NPC
-     */
+    /** Cleans up all NPCs. */
     public void cleanup() {
         for (Npc npc : playerNPCs.values()) {
             try {
                 npc.removeForAll();
             } catch (Exception e) {
-                // 忽略清理错误
+                // Ignore cleanup errors
             }
         }
         playerNPCs.clear();
     }
 
-    /**
-     * 获取配置
-     */
-    public NPCConfig getConfig() {
-        return config;
-    }
+    /** Returns the configuration. */
+    public NPCConfig getConfig() { return config; }
 
-    /**
-     * 重载配置
-     */
+    /** Reloads the configuration. */
     public void reloadConfig() {
         config.reload();
         disabledPlayers.clear();
         disabledPlayers.addAll(config.loadDisabledPlayers());
     }
 
-    /**
-     * 获取FancyNpcs插件实例
-     */
-    public FancyNpcsPlugin getFancyNpcsPlugin() {
-        return fancyNpcsPlugin;
-    }
+    /** Returns the FancyNpcs plugin instance. */
+    public FancyNpcsPlugin getFancyNpcsPlugin() { return fancyNpcsPlugin; }
 
-    /**
-     * 获取NpcManager
-     */
+    /** Returns the NpcManager. */
     public NpcManager getNpcManager() {
-        if (fancyNpcsPlugin != null) {
-            return fancyNpcsPlugin.getNpcManager();
-        }
-        return null;
+        return fancyNpcsPlugin != null ? fancyNpcsPlugin.getNpcManager() : null;
     }
 }

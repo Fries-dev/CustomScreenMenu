@@ -8,15 +8,15 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.List;
 
 /**
- * WASD导航模块入口类
- * 提供统一的模块初始化和管理接口
- * 
- * 集成说明：
- * 1. 在插件 onEnable() 中调用 WASDModule.initialize(plugin)
- * 2. 在插件 onDisable() 中调用 WASDModule.shutdown()
- * 3. 在菜单打开时调用 WASDModule.onMenuOpen(player, menuKey, ...)
- * 4. 在菜单关闭时调用 WASDModule.onMenuClose(player)
- * 5. 在配置重载时调用 WASDModule.reload()
+ * WASD navigation module entry point.
+ * Provides a unified interface for module initialization and management.
+ *
+ * Integration guide:
+ * 1. Call WASDModule.initialize(plugin) in the plugin's onEnable().
+ * 2. Call WASDModule.shutdown() in the plugin's onDisable().
+ * 3. Call WASDModule.onMenuOpen(player, menuKey, ...) when a menu opens.
+ * 4. Call WASDModule.onMenuClose(player) when a menu closes.
+ * 5. Call WASDModule.reload() when configuration is reloaded.
  */
 public class WASDModule {
 
@@ -34,12 +34,11 @@ public class WASDModule {
     }
 
     /**
-     * 初始化WASD模块
-     * 应在插件 onEnable() 中调用
+     * Initializes the WASD module. Should be called in the plugin's onEnable().
      */
     public static synchronized void initialize(JavaPlugin plugin) {
         if (instance != null) {
-            plugin.getLogger().warning("[WASDModule] 模块已经初始化，跳过重复初始化");
+            plugin.getLogger().warning("[WASDModule] Module already initialized, skipping duplicate initialization");
             return;
         }
 
@@ -47,126 +46,85 @@ public class WASDModule {
         instance.navigationHook.initialize();
 
         if (instance.enabled) {
-            plugin.getLogger().info("[WASDModule] WASD导航模块已启用");
+            plugin.getLogger().info("[WASDModule] WASD navigation module enabled");
         } else {
-            plugin.getLogger().info("[WASDModule] WASD导航模块未启用（配置已禁用）");
+            plugin.getLogger().info("[WASDModule] WASD navigation module not enabled (disabled in config)");
         }
     }
 
     /**
-     * 关闭WASD模块
-     * 应在插件 onDisable() 中调用
+     * Shuts down the WASD module. Should be called in the plugin's onDisable().
      */
     public static synchronized void shutdown() {
-        if (instance == null) {
-            return;
-        }
+        if (instance == null) return;
 
         instance.navigationHook.cleanup();
         instance.navigationManager.shutdown();
         instance = null;
     }
 
-    /**
-     * 获取模块实例
-     */
-    public static WASDModule getInstance() {
-        return instance;
-    }
+    /** Returns the module instance. */
+    public static WASDModule getInstance() { return instance; }
 
-    /**
-     * 检查模块是否启用
-     */
+    /** Checks whether the module is enabled. */
     public static boolean isModuleEnabled() {
         return instance != null && instance.enabled;
     }
 
-    /**
-     * 当菜单打开时调用
-     */
+    /** Called when a menu opens. */
     public static void onMenuOpen(Player player, String menuKey, Location[] textLocations,
-                                 List<String> commands, TextDisplay[] textDisplays, List<Double> scales) {
+                                  List<String> commands, TextDisplay[] textDisplays, List<Double> scales) {
         if (instance != null && instance.enabled) {
             instance.navigationHook.onMenuOpen(player, menuKey, textLocations, commands, textDisplays, scales);
         }
     }
 
-    /**
-     * 当菜单关闭时调用
-     */
+    /** Called when a menu closes. */
     public static void onMenuClose(Player player) {
         if (instance != null) {
             instance.navigationHook.onMenuClose(player);
         }
     }
 
-    /**
-     * 当菜单切换时调用
-     */
+    /** Called when a menu switches. */
     public static void onMenuSwitch(Player player, String newMenuKey, Location[] textLocations,
-                                   List<String> commands, TextDisplay[] textDisplays, List<Double> scales) {
+                                    List<String> commands, TextDisplay[] textDisplays, List<Double> scales) {
         if (instance != null && instance.enabled) {
             instance.navigationHook.onMenuSwitch(player, newMenuKey, textLocations, commands, textDisplays, scales);
         }
     }
 
-    /**
-     * 获取玩家当前选中的索引
-     */
+    /** Returns the currently selected index for the player. */
     public static int getSelectedIndex(Player player) {
-        if (instance != null) {
-            return instance.navigationManager.getSelectedIndex(player);
-        }
-        return -1;
+        return instance != null ? instance.navigationManager.getSelectedIndex(player) : -1;
     }
 
-    /**
-     * 获取玩家当前所在的菜单
-     */
+    /** Returns the menu the player is currently in. */
     public static String getPlayerCurrentMenu(Player player) {
-        if (instance != null) {
-            return instance.navigationManager.getPlayerCurrentMenu(player.getUniqueId());
-        }
-        return null;
+        return instance != null ? instance.navigationManager.getPlayerCurrentMenu(player.getUniqueId()) : null;
     }
 
-    /**
-     * 获取玩家当前的位置
-     */
+    /** Returns the player's current location. */
     public static Location getPlayerCurrentLocation(Player player) {
-        if (instance != null) {
-            return instance.navigationManager.getPlayerCurrentLocation(player.getUniqueId());
-        }
-        return null;
+        return instance != null ? instance.navigationManager.getPlayerCurrentLocation(player.getUniqueId()) : null;
     }
 
-    /**
-     * 切换玩家的WASD导航状态
-     */
+    /** Toggles the WASD navigation state for the player. */
     public static boolean toggleWASDForPlayer(Player player) {
-        if (instance != null) {
-            return instance.navigationHook.toggleWASDForPlayer(player);
-        }
-        return false;
+        return instance != null && instance.navigationHook.toggleWASDForPlayer(player);
     }
 
-    /**
-     * 检查指定菜单是否启用WASD导航
-     */
+    /** Checks whether WASD navigation is enabled for the specified menu. */
     public static boolean isMenuEnabled(String menuKey) {
         return instance != null && instance.navigationHook.isMenuEnabled(menuKey);
     }
 
-    /**
-     * 检查玩家是否可以使用WASD导航
-     */
+    /** Checks whether the player can use WASD navigation. */
     public static boolean canPlayerUseWASD(Player player, String menuKey) {
         return instance != null && instance.navigationHook.canPlayerUseWASD(player, menuKey);
     }
 
-    /**
-     * 重载模块配置
-     */
+    /** Reloads the module configuration. */
     public static void reload() {
         if (instance != null) {
             instance.navigationHook.reload();
@@ -174,24 +132,12 @@ public class WASDModule {
         }
     }
 
-    /**
-     * 获取导航管理器
-     */
-    public WASDNavigationManager getNavigationManager() {
-        return navigationManager;
-    }
+    /** Returns the navigation manager. */
+    public WASDNavigationManager getNavigationManager() { return navigationManager; }
 
-    /**
-     * 获取导航钩子
-     */
-    public WASDNavigationHook getNavigationHook() {
-        return navigationHook;
-    }
+    /** Returns the navigation hook. */
+    public WASDNavigationHook getNavigationHook() { return navigationHook; }
 
-    /**
-     * 检查是否启用
-     */
-    public boolean isEnabled() {
-        return enabled;
-    }
+    /** Checks whether the module is enabled. */
+    public boolean isEnabled() { return enabled; }
 }

@@ -75,7 +75,7 @@ public final class CommandUtils {
             }
             player.performCommand(command.trim());
         } catch (Exception e) {
-            CursorMenuPlugin.plugin.getLogger().warning("执行临时OP命令时出错: " + e.getMessage());
+            CursorMenuPlugin.plugin.getLogger().warning("Error executing temporary OP command: " + e.getMessage());
         } finally {
             if (!wasOp) {
                 player.setOp(false);
@@ -97,8 +97,8 @@ public final class CommandUtils {
 
             player.sendPluginMessage(CursorMenuPlugin.plugin, "BungeeCord", b.toByteArray());
         } catch (Exception e) {
-            player.sendMessage(CursorMenuPlugin.plugin.getLangMessage("system.server_transfer_failed", "&c[CursorMenu] 跨服传送失败: %error%").replace("%error%", e.getMessage()));
-            CursorMenuPlugin.plugin.getLogger().warning("跨服传送失败: " + e.getMessage());
+            player.sendMessage(CursorMenuPlugin.plugin.getLangMessage("system.server_transfer_failed", "&c[CursorMenu] Server transfer failed: %error%").replace("%error%", e.getMessage()));
+            CursorMenuPlugin.plugin.getLogger().warning("Server transfer failed: " + e.getMessage());
         }
     }
 
@@ -109,11 +109,11 @@ public final class CommandUtils {
 
         try {
             player.spigot().sendMessage(
-                net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
-                net.md_5.bungee.api.chat.TextComponent.fromLegacyText(message)
+                    net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                    net.md_5.bungee.api.chat.TextComponent.fromLegacyText(message)
             );
         } catch (Exception e) {
-            CursorMenuPlugin.plugin.getLogger().warning("发送ActionBar消息失败: " + e.getMessage());
+            CursorMenuPlugin.plugin.getLogger().warning("Failed to send ActionBar message: " + e.getMessage());
         }
     }
 }

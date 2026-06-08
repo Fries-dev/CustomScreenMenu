@@ -12,7 +12,7 @@ public class SectionManager {
 
     private static HashMap<String, Section> sections = new HashMap<String, Section>();
 
-    public void addSection(String key,Section section) {
+    public void addSection(String key, Section section) {
         sections.put(key, section);
     }
 
@@ -24,7 +24,7 @@ public class SectionManager {
         return sections.containsKey(key);
     }
 
-    public void clear(){
+    public void clear() {
         sections.clear();
     }
 
@@ -48,7 +48,7 @@ public class SectionManager {
     }
 
     public void loadAllMenuConfigs() {
-        clear(); // 清空现有菜单
+        clear(); // Clear existing menus
 
         File menuFolder = new File(CursorMenuPlugin.plugin.getDataFolder(), "menu");
         if (!menuFolder.exists()) {
