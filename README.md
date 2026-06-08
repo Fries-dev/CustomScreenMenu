@@ -1,47 +1,47 @@
-CustomScreenMenu 插件说明
+CustomScreenMenu Plugin Description
 
-(PS:本人是代码小白，只会一些基础，所以代码有不合适的地方请及时指出或者和我探讨)
+(Note: I’m a coding novice with only basic knowledge, so please let me know if there are any issues with the code or feel free to discuss them with me.)
 
-插件售价（60rmb）
-购买插件将视作支持作者继续更新和修复bug，同时将获得作者支持和帮助
+Plugin Price (60 RMB)
+Purchasing this plugin is considered a way to support the author in continuing updates and bug fixes, and you’ll also receive support and assistance from the author.
 
-讨论联系：
+Contact for Discussion:
 
-QQ：3357153117
+QQ: 3357153117
 
-discord：https://discord.gg/YpZNACup
+Discord: https://discord.gg/YpZNACup
     
-插件简介
+Plugin Overview
   
-  一款支持高版本 Minecraft 使用的自定义玩家屏幕交互插件，可通过指令快速调用，适用于特殊场景下的屏幕点击交互（如玩家首次进入游戏时的专属起始菜单界面）。
+  A custom player screen interaction plugin compatible with newer versions of Minecraft. It can be quickly activated via commands and is suitable for screen click interactions in specific scenarios (such as a custom start menu interface when a player first enters the game).
 
-核心功能亮点
+Key Features
 
-支持高版本 Minecraft 稳定运行
-指令化操作，灵活控制屏幕交互流程
-特殊场景适配（如玩家进入游戏时的起始菜单）
-集成物品 3D 模型展示功能
-可与其他插件联动扩展（如 ItemsAdder、betterhud）
-指令列表
-
-
-
-/cursormenu run [name]	启动指定名称的屏幕菜单界面
-
-/cursormenu stop	立即停止当前运行的屏幕菜单
-
-/cursormenu items [item_name]	展示指定物品的 3D 模型（需手持物品）
-
-/cursormenu itemsstop	停止当前物品的 3D 模型展示
-
-/cursormenu reload	重载插件配置文件（修改配置后需执行）
-
-扩展联动
-
-结合 ItemsAdder 插件（自定义物品）与 betterhud 插件（HUD 界面优化），可实现：
+Supports stable operation on newer versions of Minecraft
+Command-based operation for flexible control of screen interaction workflows
+Adapted for special scenarios (e.g., the start menu when players first enter the game)
+Integrated 3D item model display functionality
+Can be integrated with other plugins for extended functionality (e.g., ItemsAdder, BetterHUD)
+Command List
 
 
-当前手持物品的 3D 模型悬浮展示
-物品详细属性信息（如附魔、自定义描述）的屏幕同步呈现
-更丰富的交互式物品信息面板设计
-通过指令与插件联动，可快速构建沉浸式游戏起始界面或特殊活动交互场景。
+
+/cursormenu run [name]    Launch the screen menu interface with the specified name
+
+/cursormenu stop    Immediately stop the currently running on-screen menu
+
+/cursormenu items [item_name]    Display the 3D model of the specified item (item must be held)
+
+/cursormenu itemsstop    Stop the 3D model display of the current item
+
+/cursormenu reload    Reload the plugin configuration file (must be executed after modifying settings)
+
+Extension Integration
+
+By combining the ItemsAdder plugin (custom items) with the betterhud plugin (HUD interface optimization), you can achieve:
+
+
+Floating 3D model display of the currently held item
+Synchronized on-screen display of detailed item properties (such as enchantments and custom descriptions)
+More versatile interactive item information panel designs
+Through command integration with plugins, you can quickly build immersive game start screens or interactive scenarios for special events.
