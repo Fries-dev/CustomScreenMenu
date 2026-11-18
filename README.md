@@ -1,47 +1,59 @@
-CustomScreenMenu Plugin Description
+# CustomScreenMenu
 
-(Note: I’m a coding novice with only basic knowledge, so please let me know if there are any issues with the code or feel free to discuss them with me.)
+A Minecraft plugin that lets you build custom, interactive 3D GUIs right in the game world using entities.
 
-Plugin Price (60 RMB)
-Purchasing this plugin is considered a way to support the author in continuing updates and bug fixes, and you’ll also receive support and assistance from the author.
+I originally remade and translated this project from [CustomScreenMenu](https://github.com/JSGDJD/CustomScreenMenu) into English because I wanted to use it on my own server and thought it would be a fun project to work on.
 
-Contact for Discussion:
+## What it does
+* **3D World Menus:** Renders clickable, cursor-controlled menus directly in 3D space instead of standard chest GUIs.
+* **Entity-Powered:** Uses Minecraft entities to display buttons, text, items, and interactive input fields (including built-in login/register screens).
+* **Folia Supported:** Built to run on Spigot, Paper, and Folia (`1.19+`).
+* **Translated to English:** Full English translation of the codebase, configs, and in-game messages.
 
-QQ: 3357153117
+## A quick note on lag
+Since this plugin uses actual entities to render the menus, **having too many of them loaded at once will cause lag** (both for the server and players' FPS). It works best for spawn hubs, login screens, or specific NPC interactions rather than everywhere at once.
 
-Discord: https://discord.gg/YpZNACup
-    
-Plugin Overview
-  
-  A custom player screen interaction plugin compatible with newer versions of Minecraft. It can be quickly activated via commands and is suitable for screen click interactions in specific scenarios (such as a custom start menu interface when a player first enters the game).
+## Requirements
+* **Server:** Spigot, Paper, or Folia (`1.19` or higher)
+* **Required Dependencies:**
+  * [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/)
+  * [PacketEvents](https://modrinth.com/plugin/packetevents)
+* **Optional Dependencies:**
+  * [FancyNpcs](https://modrinth.com/plugin/fancynpcs)
+  * [SkinsRestorer](https://modrinth.com/plugin/skinsrestorer)
 
-Key Features
+## Setup
+1. Install **PlaceholderAPI** and **PacketEvents** on your server.
+2. Grab the `CustomScreenMenu` `.jar` from the [Releases]([link](https://github.com/Fries-dev/CustomScreenMenu/releases/tag/new)) tab and drop it into your `plugins` folder.
+3. Restart your server to generate the config files.
+4. Edit the configs in `/plugins/CustomScreenMenu/` and run `/cmenu reload`.
 
-Supports stable operation on newer versions of Minecraft
-Command-based operation for flexible control of screen interaction workflows
-Adapted for special scenarios (e.g., the start menu when players first enter the game)
-Integrated 3D item model display functionality
-Can be integrated with other plugins for extended functionality (e.g., ItemsAdder, BetterHUD)
-Command List
+## Commands & Permissions
+Base command: `/cursormenu` (alias: `/cmenu`)
 
+*All permissions default to `op`.*
 
+### General & Menu Controls
+* `/cmenu start` (`cursormenu.start`) - Starts/opens the 3D menu
+* `/cmenu stop` (`cursormenu.stop`) - Stops the active menu
+* `/cmenu close` (`cursormenu.close`) - Closes the current screen
+* `/cmenu reload` (`cursormenu.reload`) - Reloads the plugin configuration
+* `/cmenu items` / `/cmenu itemsstop` (`cursormenu.items`, `cursormenu.itemsstop`) - Toggles item display elements
+* `/cmenu text` (`cursormenu.text`) - Manages text display elements
 
-/cursormenu run [name]    Launch the screen menu interface with the specified name
+### Auth / Login Screen
+* `/cmenu login` (`cursormenu.login`) - Triggers the login screen (`cursormenu.menu.login`)
+* `/cmenu resetpassword` (`cursormenu.resetpassword`) - Resets a player's password
+* `/cmenu input` (`cursormenu.input`) - Handles text input fields (`cursormenu.set_input_field`)
 
-/cursormenu stop    Immediately stop the currently running on-screen menu
+### NPC Integration
+* `/cmenu npc toggle` (`cursormenu.npc.toggle`) - Toggles NPC menu triggers
+* `/cmenu npc status` (`cursormenu.npc.status`) - Checks NPC integration status
+* `/cmenu npc reload` (`cursormenu.npc.reload`) - Reloads NPC settings
+* `/cmenu npc rotate` (`cursormenu.npc.rotate`) - Rotates the NPC display
 
-/cursormenu items [item_name]    Display the 3D model of the specified item (item must be held)
+*(Note: Internal UI button triggers also use permissions like `cursormenu.register_confirm`, `cursormenu.check_registered`, `cursormenu.check_and_register`, `cursormenu.check_password_before_login`, and `cursormenu.toggle_password_visibility`.)*
 
-/cursormenu itemsstop    Stop the 3D model display of the current item
-
-/cursormenu reload    Reload the plugin configuration file (must be executed after modifying settings)
-
-Extension Integration
-
-By combining the ItemsAdder plugin (custom items) with the betterhud plugin (HUD interface optimization), you can achieve:
-
-
-Floating 3D model display of the currently held item
-Synchronized on-screen display of detailed item properties (such as enchantments and custom descriptions)
-More versatile interactive item information panel designs
-Through command integration with plugins, you can quickly build immersive game start screens or interactive scenarios for special events.
+## Credits
+* Original plugin by **野比大雄** ([Original Repo]([link](https://github.com/JSGDJD/)))
+* English remake by [Kevin Fries]([link](https://github.com/Fries-dev/))
